@@ -14,15 +14,20 @@
   .live { color:var(--green); font-size:12px; }
   .live .dot { display:inline-block; width:8px; height:8px; background:var(--green); border-radius:50%; margin-right:6px; animation:pulse 1.2s infinite; }
   @keyframes pulse { 50% { opacity:.3; } }
+  @keyframes flash { 50% { background:#3a0d0d; } }
+  @keyframes glow { 50% { box-shadow:0 0 12px rgba(245,158,11,.55); } }
+  @keyframes glowRed { 50% { box-shadow:0 0 8px rgba(239,68,68,.6); } }
   .meta { color:var(--dim); font-size:11px; margin-bottom:12px; }
   .meta a { color:var(--blue); }
   .chip { background:#0d1420; border:1px solid #1f2937; color:var(--dim); border-radius:999px; padding:4px 12px; font-size:11px; cursor:pointer; }
   .chip.on { color:var(--green); border-color:var(--green); }
   #stats { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:14px; }
-  .card { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px 12px; }
+  .card { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px 12px; position:relative; }
   .card .k { color:var(--dim); font-size:10px; letter-spacing:1px; }
   .card .v { color:#fff; font-size:20px; margin-top:4px; }
   .card.amber .v { color:var(--amber); } .card.green .v { color:var(--green); } .card.red .v { color:var(--red); } .card.blue .v { color:var(--blue); } .card.purple .v { color:var(--purple); }
+  .tip { display:none; position:absolute; top:calc(100% + 6px); left:0; width:280px; background:#0d1420; border:1px solid #1f2937; border-radius:6px; padding:8px 10px; font-size:10px; color:var(--text); z-index:40; line-height:1.6; }
+  .card:hover .tip { display:block; }
   .mhead { color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:8px; }
   .simlabel { color:var(--purple); font-size:10px; margin-left:8px; }
   #cats { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
@@ -43,13 +48,13 @@
   .row { padding:8px 10px; border-left:3px solid transparent; margin-bottom:6px; font-size:13px; background:#0d1420; border-radius:4px; }
   .row .t { color:var(--dim); margin-right:10px; }
   .badge { font-weight:bold; margin-right:10px; }
+  .killtag { float:right; margin-left:8px; background:#450a0a; color:var(--red); border:1px solid var(--red); border-radius:4px; padding:1px 6px; font-size:9px; font-weight:bold; animation:glowRed 1.5s infinite; }
   .ESCROW .badge { color:var(--amber); }   .ESCROW { border-left-color:var(--amber); }
   .ASSIGN .badge { color:var(--blue); }     .ASSIGN { border-left-color:var(--blue); }
   .COMPLETE .badge { color:var(--green); }  .COMPLETE { border-left-color:var(--green); }
   .FIREWALL .badge { color:var(--red); }    .FIREWALL { border-left-color:var(--red); background:#1a0d0d; }
   .row.mine { outline:1px solid var(--purple); }
   body.alert { animation:flash .5s 4; }
-  @keyframes flash { 50% { background:#3a0d0d; } }
   #modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:50; }
   #mbox { background:var(--panel); border:1px solid #1f2937; border-radius:10px; padding:20px; width:460px; max-height:84vh; overflow-y:auto; position:relative; }
   #mclose { position:absolute; top:8px; right:10px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:14px; }
@@ -60,15 +65,15 @@
   <h1>AGENT<span>NEXUS</span> // INSTITUTIONAL AGENT CLEARINGHOUSE</h1>
   <div class="live"><span class="dot"></span>LIVE — BSC TESTNET</div>
 </header>
-<div class="meta">VAULT: 0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB &nbsp;•&nbsp; <a href="https://testnet.bscscan.com/address/0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB" target="_blank">verified on BscScan ✔</a> &nbsp;•&nbsp; <span class="chip" id="wallet" onclick="connectWallet()">+ CONNECT WALLET</span></div>
+<div class="meta">VAULT: 0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB &nbsp;•&nbsp; <a href="https://testnet.bscscan.com/address/0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB" target="_blank">verified on BscScan ✔</a> &nbsp;•&nbsp; <span class="chip" id="wallet" style="color:var(--amber);border-color:var(--amber);font-weight:bold;animation:glow 1.6s infinite" onclick="connectWallet()">⚡ CONNECT WALLET</span></div>
 
 <div id="stats">
-  <div class="card blue"><div class="k">TOTAL TASKS</div><div class="v" id="sTasks">–</div></div>
-  <div class="card amber"><div class="k">VOLUME ESCROWED</div><div class="v" id="sEscrow">0</div></div>
-  <div class="card purple"><div class="k">PROTOCOL FEES (1%)</div><div class="v" id="sFees">0</div></div>
-  <div class="card green"><div class="k">SETTLED</div><div class="v" id="sSettled">0</div></div>
-  <div class="card red"><div class="k">ROGUES SLASHED</div><div class="v" id="sSlashed">0</div></div>
-  <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div></div>
+  <div class="card blue"><div class="k">TOTAL TASKS</div><div class="v" id="sTasks">–</div><div class="tip" id="tipTasks"></div></div>
+  <div class="card amber"><div class="k">VOLUME ESCROWED</div><div class="v" id="sEscrow">0</div><div class="tip" id="tipVolume"></div></div>
+  <div class="card purple"><div class="k">PROTOCOL FEES (1%)</div><div class="v" id="sFees">0</div><div class="tip" id="tipFees"></div></div>
+  <div class="card green"><div class="k">SETTLED</div><div class="v" id="sSettled">0</div><div class="tip" id="tipSettled"></div></div>
+  <div class="card red"><div class="k">ROGUES SLASHED</div><div class="v" id="sSlashed">0</div><div class="tip" id="tipSlash"></div></div>
+  <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div><div class="tip" id="tipRate"></div></div>
 </div>
 
 <div class="mhead">ENTERPRISE MANDATE — policy enforced on every hire<span class="simlabel">the control surface multinationals require</span></div>
@@ -122,6 +127,22 @@ function persistLedger() {
 }
 let hired = null, insured = false, clientAddr = null;
 
+/* ---------- HOVER DRILL-DOWNS ---------- */
+const rogueCounts = {};
+const rogueRecent = [];
+const settleRecent = [];
+const rogueName = tid => AGENTS[tid % AGENTS.length].n;
+function updateSlashTips() {
+  const top = Object.entries(rogueCounts).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  document.getElementById("tipSlash").innerHTML = "rogue agents (registry identities):<br>" +
+    (top.length ? top.map(([n, c]) => `${n} ×${c}`).join("<br>") : "—") +
+    (rogueRecent.length ? `<br>latest: #${rogueRecent[0].tid} — ${rogueRecent[0].reason}` : "");
+  const done = ledger.settled + ledger.slashed;
+  document.getElementById("tipRate").innerHTML = done
+    ? `1 in ${Math.round(done / ledger.slashed)} autonomous actions caught<br>witnessed sample: ${ledger.slashed}/${done} endings`
+    : "";
+}
+
 function renderStats() {
   const done = ledger.settled + ledger.slashed;
   const rate = done ? ledger.slashed / done : 0.2;
@@ -138,10 +159,26 @@ function addRow(type, text, ts = Date.now(), value = 0, save = true, mine = fals
     if (type === "FIREWALL") ledger.slashed++;
     persistLedger();
   }
+  const mm = text.match(/#(\d+)/);
+  if (mm) {
+    const tid = Number(mm[1]);
+    if (type === "FIREWALL") {
+      const name = rogueName(tid);
+      rogueCounts[name] = (rogueCounts[name] || 0) + 1;
+      rogueRecent.unshift({ tid, name, reason: (text.split("Reason: ")[1] || "").slice(0, 60) });
+      updateSlashTips();
+    }
+    if (type === "COMPLETE") {
+      settleRecent.unshift(tid);
+      if (settleRecent.length > 8) settleRecent.pop();
+      document.getElementById("tipSettled").innerHTML = "latest settlements: " + settleRecent.map(t => "#" + t).join(", ");
+    }
+  }
   renderStats();
   const div = document.createElement("div");
   div.className = "row " + type + (mine ? " mine" : "");
-  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${text}`;
+  const tag = type === "FIREWALL" ? '<span class="killtag">⚠ KILL-SWITCH</span>' : "";
+  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${tag}${text}`;
   feed.prepend(div);
   if (type === "FIREWALL") {
     document.body.classList.add("alert");
@@ -380,7 +417,7 @@ function listen() {
   });
 }
 
-/* ---------- CHAIN-ANCHORED STATS ---------- */
+/* ---------- CHAIN-ANCHORED STATS + TIPS ---------- */
 async function tick() {
   const T = Number(await vault.taskCounter());
   const done = ledger.settled + ledger.slashed;
@@ -392,6 +429,9 @@ async function tick() {
   document.getElementById("sSettled").textContent = T - slashedEst;
   document.getElementById("sSlashed").textContent = slashedEst;
   document.getElementById("sRate").textContent = Math.round(rate * 100) + "%";
+  document.getElementById("tipTasks").innerHTML = `settled ${T - slashedEst} • slashed ${slashedEst} • in-flight ~0<br>exact on-chain counter`;
+  document.getElementById("tipVolume").innerHTML = `${T} tasks × 0.002 BNB escrow<br>client capital always recoverable`;
+  document.getElementById("tipFees").innerHTML = `1document.getElementById("tipFees").innerHTML = `1% clearing on ${(T * 0.002).toFixed(2)} BNB volume<br>protocol revenue line`;
 }
 
 loadCache();
