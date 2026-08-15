@@ -127,7 +127,6 @@ function persistLedger() {
 }
 let hired = null, insured = false, clientAddr = null;
 
-/* ---------- HOVER DRILL-DOWNS ---------- */
 const rogueCounts = {};
 const rogueRecent = [];
 const settleRecent = [];
@@ -199,7 +198,6 @@ function loadCache() {
   } catch (e) {}
 }
 
-/* ---------- WALLET CONNECT ---------- */
 async function connectWallet() {
   if (!window.ethereum) { addRow("ASSIGN", "[WALLET] no wallet detected — platform stays in demo escrow mode", Date.now(), 0, false); return; }
   try {
@@ -224,7 +222,6 @@ async function clientEscrow(i) {
   hire(i);
 }
 
-/* ---------- AGENT MARKET ---------- */
 const AGENTS = [
   { n: "Sentinel-1",    c: "Security & Risk",     h: 91, d: "Real-time transaction watchdog. Flags unauthorized approvals and counterparty risk before settlement." },
   { n: "AuditHawk-3",   c: "Security & Risk",     h: 84, d: "Automated contract audits and re-execution proofs for high-stakes deployments." },
@@ -317,7 +314,6 @@ function openProfile(i) {
 function closeModal() { document.getElementById("modal").style.display = "none"; }
 document.getElementById("modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
 
-/* ---------- ENTERPRISE MANDATE ENGINE ---------- */
 function mandateCheck(a) {
   const probs = [];
   const cap = parseFloat(document.getElementById("mExp").value || "0.01");
@@ -355,7 +351,6 @@ setInterval(() => {
   const states = ["scanning mempool…", "bidding on open task…", "staking & executing…", "idle"];
   st.textContent = states[Math.floor(Math.random() * states.length)];
 }, 4000);
-
 /* ---------- COMPLIANCE EXPORT ---------- */
 function exportAudit() {
   const rows = [...feed.querySelectorAll(".row")].reverse().map(r => r.textContent.trim());
@@ -431,7 +426,7 @@ async function tick() {
   document.getElementById("sRate").textContent = Math.round(rate * 100) + "%";
   document.getElementById("tipTasks").innerHTML = `settled ${T - slashedEst} • slashed ${slashedEst} • in-flight ~0<br>exact on-chain counter`;
   document.getElementById("tipVolume").innerHTML = `${T} tasks × 0.002 BNB escrow<br>client capital always recoverable`;
-  document.getElementById("tipFees").innerHTML = `1document.getElementById("tipFees").innerHTML = `1% clearing on ${(T * 0.002).toFixed(2)} BNB volume<br>protocol revenue line`;
+  document.getElementById("tipFees").innerHTML = `1% clearing on ${(T * 0.002).toFixed(2)} BNB volume<br>protocol revenue line`;
 }
 
 loadCache();
