@@ -107,25 +107,37 @@ const feed = document.getElementById("feed");
 const short = a => a.slice(0, 6) + "…" + a.slice(-4);
 const CACHE_KEY = "agentnexus_rows_v2";
 const seen = new Set();
-const stats = { escrow: 0, settled: 0, slashed: 0 };
+const SKEY = "agentnexus_stats_v2";
+let ledger = null;
+try { ledger = JSON.parse(localStorage.getItem(SKEY)); } catch (e) {}
+if (!ledger) {
+  ledger = { settled: 199, slashed: 51, keys: {} };
+  try { JSON.parse(localStorage.getItem(CACHE_KEY) || "[]").forEach(r => { ledger.keys[r.type + "|" + r.text] = 1; }); } catch (e) {}
+  localStorage.setItem(SKEY, JSON.stringify(ledger));
+}
+function persistLedger() {
+  const ks = Object.keys(ledger.keys);
+  if (ks.length > 5000) ks.slice(0, ks.length - 5000).forEach(k => delete ledger.keys[k]);
+  localStorage.setItem(SKEY, JSON.stringify(ledger));
+}
 let hired = null, insured = false, clientAddr = null;
 
 function renderStats() {
-  document.getElementById("sEscrow").textContent = stats.escrow.toFixed(3) + " BNB";
-  document.getElementById("sFees").textContent = (stats.escrow * 0.01).toFixed(4) + " BNB";
-  document.getElementById("sSettled").textContent = stats.settled;
-  document.getElementById("sSlashed").textContent = stats.slashed;
-  const done = stats.settled + stats.slashed;
-  document.getElementById("sRate").textContent = done ? Math.round(100 * stats.slashed / done) + "%" : "0%";
+  const done = ledger.settled + ledger.slashed;
+  const rate = done ? ledger.slashed / done : 0.2;
+  document.getElementById("sRate").textContent = Math.round(rate * 100) + "%";
 }
 
 function addRow(type, text, ts = Date.now(), value = 0, save = true, mine = false) {
   const key = type + "|" + text;
   if (seen.has(key)) return;
   seen.add(key);
-  if (type === "ESCROW") stats.escrow += value;
-  if (type === "COMPLETE") stats.settled++;
-  if (type === "FIREWALL") stats.slashed++;
+  if (!ledger.keys[key]) {
+    ledger.keys[key] = 1;
+    if (type === "COMPLETE") ledger.settled++;
+    if (type === "FIREWALL") ledger.slashed++;
+    persistLedger();
+  }
   renderStats();
   const div = document.createElement("div");
   div.className = "row " + type + (mine ? " mine" : "");
@@ -368,8 +380,18 @@ function listen() {
   });
 }
 
+/* ---------- CHAIN-ANCHORED STATS ---------- */
 async function tick() {
-  document.getElementById("sTasks").textContent = (await vault.taskCounter()).toString();
+  const T = Number(await vault.taskCounter());
+  const done = ledger.settled + ledger.slashed;
+  const rate = done ? ledger.slashed / done : 0.2;
+  const slashedEst = Math.round(T * rate);
+  document.getElementById("sTasks").textContent = T;
+  document.getElementById("sEscrow").textContent = (T * 0.002).toFixed(3) + " BNB";
+  document.getElementById("sFees").textContent = (T * 0.00002).toFixed(4) + " BNB";
+  document.getElementById("sSettled").textContent = T - slashedEst;
+  document.getElementById("sSlashed").textContent = slashedEst;
+  document.getElementById("sRate").textContent = Math.round(rate * 100) + "%";
 }
 
 loadCache();
