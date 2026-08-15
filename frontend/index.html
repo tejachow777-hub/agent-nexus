@@ -2,27 +2,32 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<title>AgentNexus — Live Terminal</title>
+<title>AgentNexus — Risk Terminal</title>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 <style>
-  :root { --bg:#0a0e14; --panel:#111823; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --text:#d1d5db; --dim:#6b7280; }
+  :root { --bg:#0a0e14; --panel:#111823; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#38bdf8; --text:#d1d5db; --dim:#6b7280; }
   * { margin:0; padding:0; box-sizing:border-box; font-family:Consolas,'Courier New',monospace; }
-  body { background:var(--bg); color:var(--text); padding:24px; }
-  header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1f2937; padding-bottom:14px; margin-bottom:16px; }
+  body { background:var(--bg); color:var(--text); padding:20px 24px; }
+  header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1f2937; padding-bottom:12px; margin-bottom:14px; }
   h1 { font-size:20px; color:#fff; letter-spacing:1px; }
   h1 span { color:var(--green); }
   .live { color:var(--green); font-size:12px; }
   .live .dot { display:inline-block; width:8px; height:8px; background:var(--green); border-radius:50%; margin-right:6px; animation:pulse 1.2s infinite; }
   @keyframes pulse { 50% { opacity:.3; } }
-  .meta { color:var(--dim); font-size:12px; margin-bottom:14px; }
-  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:62vh; overflow-y:auto; }
+  .meta { color:var(--dim); font-size:11px; margin-bottom:12px; }
+  #stats { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+  .card { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px 12px; }
+  .card .k { color:var(--dim); font-size:10px; letter-spacing:1px; }
+  .card .v { color:#fff; font-size:22px; margin-top:4px; }
+  .card.amber .v { color:var(--amber); } .card.green .v { color:var(--green); } .card.red .v { color:var(--red); } .card.blue .v { color:var(--blue); }
+  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:56vh; overflow-y:auto; }
   .row { padding:8px 10px; border-left:3px solid transparent; margin-bottom:6px; font-size:13px; background:#0d1420; border-radius:4px; }
   .row .t { color:var(--dim); margin-right:10px; }
   .badge { font-weight:bold; margin-right:10px; }
   .ESCROW .badge { color:var(--amber); }   .ESCROW { border-left-color:var(--amber); }
-  .ASSIGN .badge { color:#38bdf8; }        .ASSIGN { border-left-color:#38bdf8; }
-  .COMPLETE .badge { color:var(--green); } .COMPLETE { border-left-color:var(--green); }
-  .FIREWALL .badge { color:var(--red); }   .FIREWALL { border-left-color:var(--red); background:#1a0d0d; }
+  .ASSIGN .badge { color:var(--blue); }     .ASSIGN { border-left-color:var(--blue); }
+  .COMPLETE .badge { color:var(--green); }  .COMPLETE { border-left-color:var(--green); }
+  .FIREWALL .badge { color:var(--red); }    .FIREWALL { border-left-color:var(--red); background:#1a0d0d; }
   body.alert { animation:flash .5s 4; }
   @keyframes flash { 50% { background:#3a0d0d; } }
 </style>
@@ -32,7 +37,14 @@
   <h1>AGENT<span>NEXUS</span> // INSTITUTIONAL AGENT CLEARINGHOUSE</h1>
   <div class="live"><span class="dot"></span>LIVE — BSC TESTNET</div>
 </header>
-<div class="meta">VAULT: 0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB &nbsp;|&nbsp; TOTAL TASKS: <span id="tasks">–</span></div>
+<div class="meta">VAULT: 0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB &nbsp;•&nbsp; <a style="color:var(--blue)" href="https://testnet.bscscan.com/address/0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB" target="_blank">verified on BscScan ✔</a></div>
+<div id="stats">
+  <div class="card blue"><div class="k">TOTAL TASKS</div><div class="v" id="sTasks">–</div></div>
+  <div class="card amber"><div class="k">VOLUME ESCROWED</div><div class="v" id="sEscrow">0</div></div>
+  <div class="card green"><div class="k">SETTLED</div><div class="v" id="sSettled">0</div></div>
+  <div class="card red"><div class="k">ROGUES SLASHED</div><div class="v" id="sSlashed">0</div></div>
+  <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div></div>
+</div>
 <div id="feed"></div>
 
 <script>
@@ -50,14 +62,26 @@ const provider = new ethers.JsonRpcProvider(RPC);
 const vault = new ethers.Contract(ADDRESS, ABI, provider);
 const feed = document.getElementById("feed");
 const short = a => a.slice(0, 6) + "…" + a.slice(-4);
-const bnb = w => ethers.formatEther(w) + " BNB";
-const CACHE_KEY = "agentnexus_rows_v1";
+const CACHE_KEY = "agentnexus_rows_v2";
 const seen = new Set();
+const stats = { escrow: 0, settled: 0, slashed: 0 };
 
-function addRow(type, text, ts = Date.now(), save = true) {
+function renderStats() {
+  document.getElementById("sEscrow").textContent = stats.escrow.toFixed(3) + " BNB";
+  document.getElementById("sSettled").textContent = stats.settled;
+  document.getElementById("sSlashed").textContent = stats.slashed;
+  const done = stats.settled + stats.slashed;
+  document.getElementById("sRate").textContent = done ? Math.round(100 * stats.slashed / done) + "%" : "0%";
+}
+
+function addRow(type, text, ts = Date.now(), value = 0, save = true) {
   const key = type + "|" + text;
   if (seen.has(key)) return;
   seen.add(key);
+  if (type === "ESCROW") { stats.escrow += value; }
+  if (type === "COMPLETE") { stats.settled++; }
+  if (type === "FIREWALL") { stats.slashed++; }
+  renderStats();
   const div = document.createElement("div");
   div.className = "row " + type;
   div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${text}`;
@@ -69,15 +93,15 @@ function addRow(type, text, ts = Date.now(), save = true) {
   if (save) {
     try {
       const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
-      c.push({ type, text, ts });
-      localStorage.setItem(CACHE_KEY, JSON.stringify(c.slice(-200)));
+      c.push({ type, text, ts, v: value });
+      localStorage.setItem(CACHE_KEY, JSON.stringify(c.slice(-300)));
     } catch (e) {}
   }
 }
 
 function loadCache() {
   try {
-    JSON.parse(localStorage.getItem(CACHE_KEY) || "[]").forEach(r => addRow(r.type, r.text, r.ts, false));
+    JSON.parse(localStorage.getItem(CACHE_KEY) || "[]").forEach(r => addRow(r.type, r.text, r.ts, r.v || 0, false));
   } catch (e) {}
 }
 
@@ -95,38 +119,35 @@ async function loadHistory() {
         vault.queryFilter(vault.filters.TaskCompleted(), from, to),
         vault.queryFilter(vault.filters.FirewallTriggered(), from, to),
       ]);
-    } catch (err) {
-      console.warn("Chunk skipped (pruned):", err.message);
-      break;
-    }
+    } catch (err) { break; }
     rows.push(
-      ...created.map(e => ({ b: e.blockNumber, type: "ESCROW",    text: `Task #${e.args.taskId} escrowed — ${bnb(e.args.reward)} locked by ${short(e.args.client)}` })),
-      ...assigned.map(e => ({ b: e.blockNumber, type: "ASSIGN",   text: `Agent ${short(e.args.agent)} staked ${bnb(e.args.stakeLocked)} on task #${e.args.taskId}` })),
-      ...completed.map(e => ({ b: e.blockNumber, type: "COMPLETE",text: `Task #${e.args.taskId} settled — ${bnb(e.args.rewardPaid)} released` })),
-      ...fired.map(e => ({ b: e.blockNumber, type: "FIREWALL",    text: `KILL SWITCH on task #${e.args.taskId} — ${bnb(e.args.slashedAmount)} slashed. Reason: ${e.args.reason}` }))
+      ...created.map(e => ({ b: e.blockNumber, type: "ESCROW", v: Number(ethers.formatEther(e.args.reward)), text: `Task #${e.args.taskId} escrowed — ${ethers.formatEther(e.args.reward)} BNB locked by ${short(e.args.client)}` })),
+      ...assigned.map(e => ({ b: e.blockNumber, type: "ASSIGN", v: 0, text: `Agent ${short(e.args.agent)} staked ${ethers.formatEther(e.args.stakeLocked)} BNB on task #${e.args.taskId}` })),
+      ...completed.map(e => ({ b: e.blockNumber, type: "COMPLETE", v: 0, text: `Task #${e.args.taskId} settled — ${ethers.formatEther(e.args.rewardPaid)} BNB released` })),
+      ...fired.map(e => ({ b: e.blockNumber, type: "FIREWALL", v: 0, text: `KILL SWITCH on task #${e.args.taskId} — ${ethers.formatEther(e.args.slashedAmount)} BNB slashed. Reason: ${e.args.reason}` }))
     );
     if (created.some(e => Number(e.args.taskId) === 1)) break;
     to = from - 1;
   }
-  rows.sort((x, y) => x.b - y.b).forEach(r => addRow(r.type, r.text));
+  rows.sort((x, y) => x.b - y.b).forEach(r => addRow(r.type, r.text, Date.now(), r.v));
   if (rows.length === 0 && seen.size === 0) {
-    addRow("ASSIGN", "Public RPC pruned historical logs — live events stream below. Permanent record: BscScan.", Date.now(), false);
+    addRow("ASSIGN", "Public RPC pruned historical logs — live events stream below. Permanent record: BscScan.", Date.now(), 0, false);
   }
 }
 
 function listen() {
-  vault.on("TaskCreated",     (taskId, client, reward) => addRow("ESCROW",    `Task #${taskId} escrowed — ${bnb(reward)} locked by ${short(client)}`));
-  vault.on("AgentAssigned",   (taskId, agent, stake)   => addRow("ASSIGN",    `Agent ${short(agent)} staked ${bnb(stake)} on task #${taskId}`));
-  vault.on("TaskCompleted",   (taskId, agent, paid)    => addRow("COMPLETE",  `Task #${taskId} settled — ${bnb(paid)} released`));
-  vault.on("FirewallTriggered",(taskId, rogue, slashed, reason) => addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${bnb(slashed)} slashed from ${short(rogue)}. Reason: ${reason}`));
+  vault.on("TaskCreated",     (taskId, client, reward) => addRow("ESCROW",    `Task #${taskId} escrowed — ${ethers.formatEther(reward)} BNB locked by ${short(client)}`, Date.now(), Number(ethers.formatEther(reward))));
+  vault.on("AgentAssigned",   (taskId, agent, stake)   => addRow("ASSIGN",    `Agent ${short(agent)} staked ${ethers.formatEther(stake)} BNB on task #${taskId}`));
+  vault.on("TaskCompleted",   (taskId, agent, paid)    => addRow("COMPLETE",  `Task #${taskId} settled — ${ethers.formatEther(paid)} BNB released`));
+  vault.on("FirewallTriggered",(taskId, rogue, slashed, reason) => addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed from ${short(rogue)}. Reason: ${reason}`));
 }
 
 async function tick() {
-  document.getElementById("tasks").textContent = (await vault.taskCounter()).toString();
+  document.getElementById("sTasks").textContent = (await vault.taskCounter()).toString();
 }
 
 loadCache();
-loadHistory().then(listen).catch(e => addRow("FIREWALL", "Connection error: " + e.message, Date.now(), false));
+loadHistory().then(listen).catch(e => addRow("FIREWALL", "Connection error: " + e.message, Date.now(), 0, false));
 tick(); setInterval(tick, 8000);
 </script>
 </body>
