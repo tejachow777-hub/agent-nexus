@@ -30,12 +30,19 @@
   .card:hover .tip { display:block; }
   .mhead { color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:8px; }
   .simlabel { color:var(--purple); font-size:10px; margin-left:8px; }
+  #q { width:100%; background:#0d1420; border:1px solid #1f2937; color:var(--text); border-radius:8px; padding:8px 12px; font-family:inherit; font-size:12px; margin-bottom:10px; }
+  #q:focus { outline:1px solid var(--green); }
   #cats { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
-  #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:14px; }
+  #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
   .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; }
   .agent .n { color:#fff; font-size:12px; font-weight:bold; cursor:pointer; }
   .agent .n:hover { color:var(--blue); }
   .agent .s { color:var(--dim); margin:4px 0; }
+  .ava { display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:#0d1420; border:1px solid #1f2937; border-radius:6px; font-size:13px; flex:none; }
+  .grade { margin-left:auto; padding:1px 7px; border-radius:4px; font-weight:bold; font-size:10px; }
+  .gS { background:#3a2b00; color:var(--amber); } .gA { background:#052e16; color:var(--green); } .gB { background:#082f49; color:var(--blue); } .gC { background:#450a0a; color:var(--red); }
+  .tags { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
+  .tag { background:#0d1420; border:1px solid #1f2937; color:var(--dim); border-radius:4px; padding:1px 6px; font-size:9px; }
   .humi { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:bold; }
   .humi.ok { background:#052e16; color:var(--green); }
   .humi.bad { background:#450a0a; color:var(--red); }
@@ -86,6 +93,7 @@
 </div>
 
 <div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • ranked top-tier preview • click a name for full profile<span class="simlabel">live registry + GSA scores post-hackathon</span></div>
+<input id="q" placeholder="🔍 Search agents, categories, capabilities (try: x402, yield, audit)…" oninput="curQ=this.value.toLowerCase();renderMarket()" />
 <div id="cats"></div>
 <div style="margin:0 0 10px"><span class="mhead" style="display:inline">SORT BY:</span>
 <select id="sortSel" style="background:#0d1420;color:var(--text);border:1px solid #1f2937;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:11px" onchange="curSort=this.value;renderMarket()">
@@ -248,28 +256,30 @@ async function clientEscrow(i) {
 }
 
 const AGENTS = [
-  { n: "Sentinel-1",    c: "Security & Risk",     h: 91, d: "Real-time transaction watchdog. Flags unauthorized approvals and counterparty risk before settlement." },
-  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84, d: "Automated contract audits and re-execution proofs for high-stakes deployments." },
-  { n: "PayRail-5",     c: "Payments",            h: 81, d: "Stablecoin settlement and remittance routing with SLA guarantees." },
-  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78, d: "Conservative vault strategies: blue-chip pools only, strict max-drawdown mandate." },
-  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77, d: "On-chain alpha signals and anomaly-detection feeds for trading desks." },
-  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75, d: "Contract CI/CD: deploy, verify, monitor — with rollback authority." },
-  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73, d: "Position rebalancing under on-chain risk limits." },
-  { n: "CommunityBot-8",c: "Social & Support",    h: 69, d: "Multilingual community ops and support with escalation policies." },
-  { n: "FlowRunner-12", c: "Trading & Execution", h: 66, d: "OTC and block-trade execution with hard slippage mandates." },
-  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62, d: "Autonomous in-game economy actor with bounded bankroll." },
-  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58, d: "Raw on-chain analytics; unverified data provenance — gate review." },
-  { n: "SwapBot-44",    c: "Trading & Execution", h: 41, d: "Aggressive DEX router with prior mandate breaches — gate failed." },
+  { n: "Sentinel-1",    c: "Security & Risk",     h: 91, ava: "🛡️", tags: ["MCP", "x402", "monitor"],  d: "Real-time transaction watchdog. Flags unauthorized approvals and counterparty risk before settlement." },
+  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84, ava: "🦅", tags: ["audit", "zkML", "MCP"],     d: "Automated contract audits and re-execution proofs for high-stakes deployments." },
+  { n: "PayRail-5",     c: "Payments",            h: 81, ava: "💸", tags: ["x402", "A2A", "payments"],   d: "Stablecoin settlement and remittance routing with SLA guarantees." },
+  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78, ava: "🌾", tags: ["DeFi", "OASF", "x402"],      d: "Conservative vault strategies: blue-chip pools only, strict max-drawdown mandate." },
+  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77, ava: "📡", tags: ["API", "data", "MCP"],        d: "On-chain alpha signals and anomaly-detection feeds for trading desks." },
+  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75, ava: "🤖", tags: ["CI/CD", "web", "MCP"],       d: "Contract CI/CD: deploy, verify, monitor — with rollback authority." },
+  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73, ava: "🔐", tags: ["risk", "OASF"],              d: "Position rebalancing under on-chain risk limits." },
+  { n: "CommunityBot-8",c: "Social & Support",    h: 69, ava: "💬", tags: ["web", "A2A", "social"],      d: "Multilingual community ops and support with escalation policies." },
+  { n: "FlowRunner-12", c: "Trading & Execution", h: 66, ava: "🌀", tags: ["OTC", "x402", "A2A"],        d: "OTC and block-trade execution with hard slippage mandates." },
+  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62, ava: "🎮", tags: ["gaming", "NFT"],             d: "Autonomous in-game economy actor with bounded bankroll." },
+  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58, ava: "⛏️", tags: ["data", "API"],               d: "Raw on-chain analytics; unverified data provenance — gate review." },
+  { n: "SwapBot-44",    c: "Trading & Execution", h: 41, ava: "⚡", tags: ["DEX", "x402"],               d: "Aggressive DEX router with prior mandate breaches — gate failed." },
 ];
 const CATS = ["ALL", "DeFi & Yield", "Trading & Execution", "Payments", "Data & Analytics", "Security & Risk", "Social & Support", "Infra & DevOps", "Gaming & NFT"];
 let curCat = "ALL";
 let curSort = "fit";
+let curQ = "";
 const catsEl = document.getElementById("cats");
 const marketEl = document.getElementById("market");
 
 const pillars = h => { const q = Math.floor(h / 4); return [q, q, q, h - 3 * q]; };
 const priceOf = a => 0.001 + (a.h - 40) * 0.00005;
 const histOf = a => ({ done: a.h * 4, slashed: a.h >= 60 ? Math.max(0, Math.round((90 - a.h) / 8)) : Math.round((100 - a.h) / 3), up: (90 + a.h / 10).toFixed(1) });
+const gradeOf = h => h >= 90 ? ["gS", "S"] : h >= 75 ? ["gA", "A"] : h >= 60 ? ["gB", "B"] : ["gC", "C"];
 const slashRateOf = a => { const H = histOf(a); return H.slashed / Math.max(1, H.done + H.slashed); };
 const idleOf = a => ((document.getElementById("st" + a.i)?.textContent || "").includes("idle") ? 1 : 0);
 function fitScore(a) { return a.h * 0.6 + (histOf(a).slashed === 0 ? 25 : Math.max(0, 25 - histOf(a).slashed * 8)) + (idleOf(a) ? 15 : 0); }
@@ -321,12 +331,16 @@ function renderMarket() {
   marketEl.innerHTML = "";
   AGENTS.map((a, i) => ({ ...a, i }))
     .filter(a => curCat === "ALL" || a.c === curCat)
+    .filter(a => !curQ || a.n.toLowerCase().includes(curQ) || a.c.toLowerCase().includes(curQ) || a.tags.some(t => t.toLowerCase().includes(curQ)))
     .filter(a => curSort !== "zero" || histOf(a).slashed === 0)
     .sort(SORTS[curSort] || SORTS.fit)
     .forEach(a => {
+      const [gc, gl] = gradeOf(a.h);
       const d = document.createElement("div");
       d.className = "agent";
-      d.innerHTML = `<div class="n" onclick="openProfile(${a.i})">${a.n} ⓘ</div><div class="s">${a.c}</div>
+      d.innerHTML = `<div style="display:flex;align-items:center;gap:6px"><span class="ava">${a.ava}</span><div class="n" onclick="openProfile(${a.i})">${a.n} ⓘ</div><span class="grade ${gc}">${gl}</span></div>
+        <div class="s">${a.c}</div>
+        <div class="tags">${a.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
         <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
         <div class="st" id="st${a.i}">idle</div>
         <button ${a.h >= 60 ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>`;
@@ -336,13 +350,13 @@ function renderMarket() {
 renderMarket();
 
 function openProfile(i) {
-  const a = AGENTS[i], P = pillars(a.h), H = histOf(a), fee = priceOf(a) * 0.01;
+  const a = AGENTS[i], P = pillars(a.h), H = histOf(a), fee = priceOf(a) * 0.01, [gc, gl] = gradeOf(a.h);
   const hireBtn = a.h >= 60
     ? `<button style="margin-top:12px;width:100%;padding:8px;background:#052e16;color:var(--green);border:1px solid var(--green);border-radius:6px;cursor:pointer;font-family:inherit" onclick="clientEscrow(${a.i});closeModal()">${clientAddr ? "ESCROW FROM YOUR WALLET & HIRE" : "HIRE " + a.n.toUpperCase()}</button>`
     : `<button style="margin-top:12px;width:100%;padding:8px;background:#450a0a;color:var(--red);border:1px solid var(--red);border-radius:6px;font-family:inherit" disabled>BELOW REPUTATION GATE ✕</button>`;
   document.getElementById("mbody").innerHTML = `
-    <div style="font-size:16px;color:#fff;font-weight:bold">${a.n} <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span></div>
-    <div style="color:var(--dim);font-size:11px;margin-top:2px">${a.c}</div>
+    <div style="font-size:16px;color:#fff;font-weight:bold">${a.ava} ${a.n} <span class="grade ${gc}">${gl}</span> <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span></div>
+    <div style="color:var(--dim);font-size:11px;margin-top:2px">${a.c} • ${a.tags.join(" • ")}</div>
     <p style="margin:10px 0;font-size:12px">${a.d}</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
       <div class="card amber"><div class="k">PRICE / TASK</div><div class="v" style="font-size:15px">${priceOf(a).toFixed(4)} BNB</div></div>
