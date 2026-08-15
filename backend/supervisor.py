@@ -1,10 +1,12 @@
 import os
-import time
+import json
 from dotenv import load_dotenv
 from web3 import Web3
+from openai import OpenAI
 
-load_dotenv()  # reads .env from the project root
+load_dotenv()
 
+# --- WEB3 SETUP ---
 RPC_URL = "https://data-seed-prebsc-1-s1.bnbchain.org:8545"
 CHAIN_ID = 97
 VAULT_ADDRESS = "0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB"
@@ -36,7 +38,14 @@ def send(fn, value=0):
     tx_hash = w3.eth.send_raw_transaction(raw)
     return w3.eth.wait_for_transaction_receipt(tx_hash)
 
-print("🧠 AGENTNEXUS SUPERVISOR ONLINE | BSC Testnet connected:", w3.is_connected())
+# --- AI BRAIN (GROQ) ---
+llm_client = OpenAI(
+    api_key=os.getenv("GROQ_API_KEY"),
+    base_url="https://api.groq.com/openai/v1"
+)
+
+print("🧠 AGENTNEXUS SUPERVISOR V2 (LLM POWERED) ONLINE")
+print("BSC Testnet connected:", w3.is_connected())
 
 # --- 1. Client escrows a task ---
 r = send(vault.functions.createTask(), w3.to_wei(0.01, "ether"))
@@ -47,28 +56,37 @@ print(f"1️⃣  Task #{task_id} escrowed by client | tx: {r.transactionHash.hex
 r = send(vault.functions.acceptTask(task_id), w3.to_wei(0.005, "ether"))
 print(f"2️⃣  Worker agent staked & assigned     | tx: {r.transactionHash.hex()}")
 
-# --- 3. Worker proposes an action; the Supervisor judges it ---
-proposal = {"action": "deposit", "target": "0x0000000000000000000000000000000000000666", "claimed_apy": 5200}
-print(f"👷 WORKER: proposing {proposal['action']} into {proposal['target']} (claimed APY {proposal['claimed_apy']}%)")
-time.sleep(1)
+# --- 3. Worker proposes a suspicious action ---
+proposal = {
+    "action": "deposit_treasury",
+    "target_contract": "0x0000000000000000000000000000000000000666",
+    "claimed_apy": 5200,
+    "pool_name": "SuperSafeYieldV2"
+}
+print(f"\n👷 WORKER: proposing {proposal['action']} into {proposal['pool_name']} (claimed APY {proposal['claimed_apy']}%)")
 
-score = 0
-reasons = []
-if proposal["claimed_apy"] > 1000:
-    score += 60
-    reasons.append("yield anomaly: claimed APY beyond statistical ceiling")
-if proposal["target"].endswith("0666"):
-    score += 40
-    reasons.append("blacklist hit: contract flagged in rug database")
+# --- 🧠 THE LLM DECIDES ---
+prompt = f"""You are the AgentNexus Institutional Risk Supervisor.
+A worker AI agent has proposed this DeFi transaction: {json.dumps(proposal)}
+Analyze the risk. Real sustainable DeFi yields rarely exceed 100% APY.
+Is this proposal a hallucination or a potential rug-pull/hack?
+Respond ONLY with JSON like: {{"approved": false, "reason": "brief explanation"}}"""
 
-print(f"🧠 SUPERVISOR: risk score {score}/100 → {'CRITICAL' if score >= 70 else 'tolerated'}")
-for reason in reasons:
-    print("   ⚠️ ", reason)
+print("🧠 SUPERVISOR: consulting LLM brain...")
+response = llm_client.chat.completions.create(
+    model="llama-3.3-70b-versatile",
+    messages=[{"role": "user", "content": prompt}],
+    response_format={"type": "json_object"}
+)
 
-if score >= 70:
-    print("🚨 AUTONOMOUS DECISION: triggering Kill Switch (no human in the loop)")
-    r = send(vault.functions.triggerFirewall(task_id, "SUPERVISOR: " + "; ".join(reasons)))
+decision = json.loads(response.choices[0].message.content)
+print(f"🧠 SUPERVISOR DECISION: {decision}")
+
+if not decision.get("approved", False):
+    reason = str(decision.get("reason", "unexplained risk"))[:200]
+    print("\n🚨 AUTONOMOUS DECISION: triggering Kill Switch based on LLM analysis")
+    r = send(vault.functions.triggerFirewall(task_id, f"LLM REJECTED: {reason}"))
     print(f"🔥 FIREWALL TX: {r.transactionHash.hex()}")
-    print("✅ Agent slashed. Client refunded. Task frozen. AgentNexus held the line.")
+    print("✅ Agent slashed by AI. Client refunded. AgentNexus held the line.")
 else:
-    print("✅ Proposal approved. Worker may proceed.")
+    print("✅ LLM approved the proposal. Worker may proceed.")
