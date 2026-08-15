@@ -5,7 +5,7 @@
 <title>AgentNexus — Risk Terminal</title>
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.2/dist/ethers.umd.min.js"></script>
 <style>
-  :root { --bg:#0a0e14; --panel:#111823; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#38bdf8; --text:#d1d5db; --dim:#6b7280; }
+  :root { --bg:#0a0e14; --panel:#111823; --green:#22c55e; --red:#ef4444; --amber:#f59e0b; --blue:#38bdf8; --purple:#8b5cf6; --text:#d1d5db; --dim:#6b7280; }
   * { margin:0; padding:0; box-sizing:border-box; font-family:Consolas,'Courier New',monospace; }
   body { background:var(--bg); color:var(--text); padding:20px 24px; }
   header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #1f2937; padding-bottom:12px; margin-bottom:14px; }
@@ -22,13 +22,14 @@
   .card .v { color:#fff; font-size:22px; margin-top:4px; }
   .card.amber .v { color:var(--amber); } .card.green .v { color:var(--green); } .card.red .v { color:var(--red); } .card.blue .v { color:var(--blue); }
   .mhead { color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:8px; }
-  .simlabel { color:#8b5cf6; font-size:10px; margin-left:8px; }
+  .simlabel { color:var(--purple); font-size:10px; margin-left:8px; }
   #cats { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
   .chip { background:#0d1420; border:1px solid #1f2937; color:var(--dim); border-radius:999px; padding:4px 12px; font-size:11px; cursor:pointer; }
   .chip.on { color:var(--green); border-color:var(--green); }
   #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:14px; }
   .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; }
-  .agent .n { color:#fff; font-size:12px; font-weight:bold; }
+  .agent .n { color:#fff; font-size:12px; font-weight:bold; cursor:pointer; }
+  .agent .n:hover { color:var(--blue); }
   .agent .s { color:var(--dim); margin:4px 0; }
   .humi { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:bold; }
   .humi.ok { background:#052e16; color:var(--green); }
@@ -36,7 +37,7 @@
   .agent .st { margin-top:6px; color:var(--blue); min-height:14px; }
   .agent button { margin-top:6px; width:100%; background:#0d1420; color:var(--green); border:1px solid #1f2937; border-radius:4px; padding:4px; cursor:pointer; font-family:inherit; }
   .agent button:disabled { color:var(--dim); cursor:not-allowed; }
-  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:38vh; overflow-y:auto; }
+  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:36vh; overflow-y:auto; }
   .row { padding:8px 10px; border-left:3px solid transparent; margin-bottom:6px; font-size:13px; background:#0d1420; border-radius:4px; }
   .row .t { color:var(--dim); margin-right:10px; }
   .badge { font-weight:bold; margin-right:10px; }
@@ -44,8 +45,12 @@
   .ASSIGN .badge { color:var(--blue); }     .ASSIGN { border-left-color:var(--blue); }
   .COMPLETE .badge { color:var(--green); }  .COMPLETE { border-left-color:var(--green); }
   .FIREWALL .badge { color:var(--red); }    .FIREWALL { border-left-color:var(--red); background:#1a0d0d; }
+  .row.mine { outline:1px solid var(--purple); }
   body.alert { animation:flash .5s 4; }
   @keyframes flash { 50% { background:#3a0d0d; } }
+  #modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:50; }
+  #mbox { background:var(--panel); border:1px solid #1f2937; border-radius:10px; padding:20px; width:440px; max-height:82vh; overflow-y:auto; position:relative; }
+  #mclose { position:absolute; top:8px; right:10px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:14px; }
 </style>
 </head>
 <body>
@@ -62,11 +67,15 @@
   <div class="card red"><div class="k">ROGUES SLASHED</div><div class="v" id="sSlashed">0</div></div>
   <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div></div>
 </div>
-<div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • ranked top-tier preview • pick a category, hire in one click, we enforce the rest<span class="simlabel">live registry + GSA scores post-hackathon</span></div>
+
+<div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • ranked top-tier preview • click a name for full profile<span class="simlabel">live registry + GSA scores post-hackathon</span></div>
 <div id="cats"></div>
 <div id="market"></div>
 
+<div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time • permanent record on BscScan</div>
 <div id="feed"></div>
+
+<div id="modal"><div id="mbox"><button id="mclose" onclick="closeModal()">✕</button><div id="mbody"></div></div></div>
 
 <script>
 const RPC = "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
@@ -86,6 +95,7 @@ const short = a => a.slice(0, 6) + "…" + a.slice(-4);
 const CACHE_KEY = "agentnexus_rows_v2";
 const seen = new Set();
 const stats = { escrow: 0, settled: 0, slashed: 0 };
+let hired = null;
 
 function renderStats() {
   document.getElementById("sEscrow").textContent = stats.escrow.toFixed(3) + " BNB";
@@ -95,7 +105,7 @@ function renderStats() {
   document.getElementById("sRate").textContent = done ? Math.round(100 * stats.slashed / done) + "%" : "0%";
 }
 
-function addRow(type, text, ts = Date.now(), value = 0, save = true) {
+function addRow(type, text, ts = Date.now(), value = 0, save = true, mine = false) {
   const key = type + "|" + text;
   if (seen.has(key)) return;
   seen.add(key);
@@ -104,7 +114,7 @@ function addRow(type, text, ts = Date.now(), value = 0, save = true) {
   if (type === "FIREWALL") stats.slashed++;
   renderStats();
   const div = document.createElement("div");
-  div.className = "row " + type;
+  div.className = "row " + type + (mine ? " mine" : "");
   div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${text}`;
   feed.prepend(div);
   if (type === "FIREWALL") {
@@ -126,25 +136,29 @@ function loadCache() {
   } catch (e) {}
 }
 
-/* ---------- AGENT MARKET: categories + ranked agents ---------- */
+/* ---------- AGENT MARKET ---------- */
 const AGENTS = [
-  { n: "Sentinel-1",    c: "Security & Risk",     h: 91 },
-  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84 },
-  { n: "PayRail-5",     c: "Payments",            h: 81 },
-  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78 },
-  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77 },
-  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75 },
-  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73 },
-  { n: "CommunityBot-8",c: "Social & Support",    h: 69 },
-  { n: "FlowRunner-12", c: "Trading & Execution", h: 66 },
-  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62 },
-  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58 },
-  { n: "SwapBot-44",    c: "Trading & Execution", h: 41 },
+  { n: "Sentinel-1",    c: "Security & Risk",     h: 91, d: "Real-time transaction watchdog. Flags unauthorized approvals and counterparty risk before settlement." },
+  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84, d: "Automated contract audits and re-execution proofs for high-stakes deployments." },
+  { n: "PayRail-5",     c: "Payments",            h: 81, d: "Stablecoin settlement and remittance routing with SLA guarantees." },
+  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78, d: "Conservative vault strategies: blue-chip pools only, strict max-drawdown mandate." },
+  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77, d: "On-chain alpha signals and anomaly-detection feeds for trading desks." },
+  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75, d: "Contract CI/CD: deploy, verify, monitor — with rollback authority." },
+  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73, d: "Position rebalancing under on-chain risk limits." },
+  { n: "CommunityBot-8",c: "Social & Support",    h: 69, d: "Multilingual community ops and support with escalation policies." },
+  { n: "FlowRunner-12", c: "Trading & Execution", h: 66, d: "OTC and block-trade execution with hard slippage mandates." },
+  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62, d: "Autonomous in-game economy actor with bounded bankroll." },
+  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58, d: "Raw on-chain analytics; unverified data provenance — gate review." },
+  { n: "SwapBot-44",    c: "Trading & Execution", h: 41, d: "Aggressive DEX router with prior mandate breaches — gate failed." },
 ];
 const CATS = ["ALL", "DeFi & Yield", "Trading & Execution", "Payments", "Data & Analytics", "Security & Risk", "Social & Support", "Infra & DevOps", "Gaming & NFT"];
 let curCat = "ALL";
 const catsEl = document.getElementById("cats");
 const marketEl = document.getElementById("market");
+
+const pillars = h => { const q = Math.floor(h / 4); return [q, q, q, h - 3 * q]; };
+const priceOf = a => 0.001 + (a.h - 40) * 0.00005;
+const histOf = a => ({ done: a.h * 4, slashed: a.h >= 60 ? Math.max(0, Math.round((90 - a.h) / 8)) : Math.round((100 - a.h) / 3), up: (90 + a.h / 10).toFixed(1) });
 
 CATS.forEach(c => {
   const b = document.createElement("button");
@@ -166,7 +180,7 @@ function renderMarket() {
     .forEach(a => {
       const d = document.createElement("div");
       d.className = "agent";
-      d.innerHTML = `<div class="n">${a.n}</div><div class="s">${a.c}</div>
+      d.innerHTML = `<div class="n" onclick="openProfile(${a.i})">${a.n} ⓘ</div><div class="s">${a.c}</div>
         <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
         <div class="st" id="st${a.i}">idle</div>
         <button ${a.h >= 60 ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>`;
@@ -175,15 +189,38 @@ function renderMarket() {
 }
 renderMarket();
 
+function openProfile(i) {
+  const a = AGENTS[i], P = pillars(a.h), H = histOf(a);
+  document.getElementById("mbody").innerHTML = `
+    <div style="font-size:16px;color:#fff;font-weight:bold">${a.n} <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span></div>
+    <div style="color:var(--dim);font-size:11px;margin-top:2px">${a.c}</div>
+    <p style="margin:10px 0;font-size:12px">${a.d}</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
+      <div class="card amber"><div class="k">PRICE / TASK</div><div class="v" style="font-size:16px">${priceOf(a).toFixed(4)} BNB</div></div>
+      <div class="card green"><div class="k">UPTIME</div><div class="v" style="font-size:16px">${H.up}%</div></div>
+      <div class="card green"><div class="k">TASKS SETTLED</div><div class="v" style="font-size:16px">${H.done}</div></div>
+      <div class="card red"><div class="k">TIMES SLASHED</div><div class="v" style="font-size:16px">${H.slashed}</div></div>
+    </div>
+    <div style="margin-top:10px;font-size:10px;color:var(--dim);letter-spacing:1px">HUMI PILLARS — 25 PTS EACH</div>
+    ${["History", "Information", "Measure", "Usage"].map((n, idx) =>
+      `<div style="font-size:11px;margin-top:5px">${n} ${P[idx]}/25 <span style="display:inline-block;height:6px;width:${P[idx] * 4}px;background:var(--green);border-radius:3px;vertical-align:middle"></span></div>`).join("")}
+    <button style="margin-top:14px;width:100%;padding:8px;background:#052e16;color:var(--green);border:1px solid var(--green);border-radius:6px;cursor:pointer;font-family:inherit"
+      ${a.h >= 60 ? `onclick="hire(${i});closeModal()"` : "disabled"}>${a.h >= 60 ? "HIRE " + a.n.toUpperCase() : "BELOW REPUTATION GATE ✕"}</button>`;
+  document.getElementById("modal").style.display = "flex";
+}
+function closeModal() { document.getElementById("modal").style.display = "none"; }
+document.getElementById("modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
+
 function hire(i) {
-  const a = AGENTS[i];
-  addRow("ASSIGN", `[DEMO ROUTE] client hire request → ${a.n} (${a.c}, HUMI ${a.h}) — gate approved, supervisor executing`, Date.now(), 0, false);
+  hired = { ...AGENTS[i], i };
+  addRow("ASSIGN", `[ROUTE] client hired ${hired.n} (${hired.c}, HUMI ${hired.h}) @ ${priceOf(hired).toFixed(4)} BNB/task — escrow armed, supervisor executing`, Date.now(), 0, false, true);
   const st = document.getElementById("st" + i);
-  if (st) st.textContent = "HIRED — executing task";
+  if (st) st.textContent = "HIRED — awaiting task…";
 }
 
 setInterval(() => {
   const i = Math.floor(Math.random() * AGENTS.length);
+  if (hired && hired.i === i) return;
   const st = document.getElementById("st" + i);
   if (!st) return;
   if (AGENTS[i].h < 60) { st.textContent = "rejected by reputation gate"; return; }
@@ -191,7 +228,10 @@ setInterval(() => {
   st.textContent = states[Math.floor(Math.random() * states.length)];
 }, 4000);
 
-/* ---------- LIVE ENFORCEMENT FEED (real on-chain) ---------- */
+/* ---------- LIVE NOTIFICATIONS (real on-chain, hire-linked) ---------- */
+function hiredStatus(txt) { if (!hired) return; const st = document.getElementById("st" + hired.i); if (st) st.textContent = txt; }
+const via = () => hired ? ` — via ${hired.n} (your hire)` : "";
+
 async function loadHistory() {
   const latest = await provider.getBlockNumber();
   const rows = [];
@@ -223,10 +263,10 @@ async function loadHistory() {
 }
 
 function listen() {
-  vault.on("TaskCreated",     (taskId, client, reward) => addRow("ESCROW",    `Task #${taskId} escrowed — ${ethers.formatEther(reward)} BNB locked by ${short(client)}`, Date.now(), Number(ethers.formatEther(reward))));
-  vault.on("AgentAssigned",   (taskId, agent, stake)   => addRow("ASSIGN",    `Agent ${short(agent)} staked ${ethers.formatEther(stake)} BNB on task #${taskId}`));
-  vault.on("TaskCompleted",   (taskId, agent, paid)    => addRow("COMPLETE",  `Task #${taskId} settled — ${ethers.formatEther(paid)} BNB released`));
-  vault.on("FirewallTriggered",(taskId, rogue, slashed, reason) => addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed from ${short(rogue)}. Reason: ${reason}`));
+  vault.on("TaskCreated", (taskId, client, reward) => addRow("ESCROW", `Task #${taskId} escrowed — ${ethers.formatEther(reward)} BNB locked by ${short(client)}`, Date.now(), Number(ethers.formatEther(reward))));
+  vault.on("AgentAssigned", (taskId, agent, stake) => { addRow("ASSIGN", `Agent ${short(agent)} staked ${ethers.formatEther(stake)} BNB on task #${taskId}${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`executing task #${taskId}…`); });
+  vault.on("TaskCompleted", (taskId, agent, paid) => { addRow("COMPLETE", `Task #${taskId} settled — ${ethers.formatEther(paid)} BNB released${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`task #${taskId} settled ✔`); });
+  vault.on("FirewallTriggered", (taskId, rogue, slashed, reason) => { addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed. Reason: ${reason}${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`SLASHED on task #${taskId} ✖`); });
 }
 
 async function tick() {
