@@ -23,7 +23,10 @@
   .card.amber .v { color:var(--amber); } .card.green .v { color:var(--green); } .card.red .v { color:var(--red); } .card.blue .v { color:var(--blue); }
   .mhead { color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:8px; }
   .simlabel { color:#8b5cf6; font-size:10px; margin-left:8px; }
-  #market { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:14px; }
+  #cats { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  .chip { background:#0d1420; border:1px solid #1f2937; color:var(--dim); border-radius:999px; padding:4px 12px; font-size:11px; cursor:pointer; }
+  .chip.on { color:var(--green); border-color:var(--green); }
+  #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:10px; margin-bottom:14px; }
   .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; }
   .agent .n { color:#fff; font-size:12px; font-weight:bold; }
   .agent .s { color:var(--dim); margin:4px 0; }
@@ -33,7 +36,7 @@
   .agent .st { margin-top:6px; color:var(--blue); min-height:14px; }
   .agent button { margin-top:6px; width:100%; background:#0d1420; color:var(--green); border:1px solid #1f2937; border-radius:4px; padding:4px; cursor:pointer; font-family:inherit; }
   .agent button:disabled { color:var(--dim); cursor:not-allowed; }
-  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:44vh; overflow-y:auto; }
+  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:38vh; overflow-y:auto; }
   .row { padding:8px 10px; border-left:3px solid transparent; margin-bottom:6px; font-size:13px; background:#0d1420; border-radius:4px; }
   .row .t { color:var(--dim); margin-right:10px; }
   .badge { font-weight:bold; margin-right:10px; }
@@ -60,7 +63,8 @@
   <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div></div>
 </div>
 
-<div class="mhead">AGENT MARKET — ERC-8004 LABOR POOL<span class="simlabel">preview feed • live registry + GSA scores integration post-hackathon</span></div>
+<div class="mhead">AGENT MARKET — pick a category, hire in one click, we enforce the rest<span class="simlabel">preview feed • live ERC-8004 registry + GSA scores post-hackathon</span></div>
+<div id="cats"></div>
 <div id="market"></div>
 
 <div id="feed"></div>
@@ -123,35 +127,67 @@ function loadCache() {
   } catch (e) {}
 }
 
-/* ---------- AGENT MARKET PREVIEW (simulated) ---------- */
+/* ---------- AGENT MARKET: categories + ranked agents ---------- */
 const AGENTS = [
-  { n: "YieldScout-7",  s: "Yield Optimization", h: 78 },
-  { n: "AuditHawk-3",   s: "Contract Audits",    h: 84 },
-  { n: "FlowRunner-12", s: "OTC Execution",      h: 66 },
-  { n: "DataMiner-9",   s: "On-chain Analytics", h: 58 },
-  { n: "SwapBot-44",    s: "DEX Routing",        h: 41 },
-  { n: "Sentinel-1",    s: "Risk Monitoring",    h: 91 },
+  { n: "Sentinel-1",    c: "Security & Risk",     h: 91 },
+  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84 },
+  { n: "PayRail-5",     c: "Payments",            h: 81 },
+  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78 },
+  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77 },
+  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75 },
+  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73 },
+  { n: "CommunityBot-8",c: "Social & Support",    h: 69 },
+  { n: "FlowRunner-12", c: "Trading & Execution", h: 66 },
+  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62 },
+  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58 },
+  { n: "SwapBot-44",    c: "Trading & Execution", h: 41 },
 ];
-const market = document.getElementById("market");
-AGENTS.forEach((a, i) => {
-  const d = document.createElement("div");
-  d.className = "agent";
-  d.innerHTML = `<div class="n">${a.n}</div><div class="s">${a.s}</div>
-    <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
-    <div class="st" id="st${i}">idle</div>
-    <button ${a.h >= 60 ? "" : "disabled"} onclick="hire(${i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>`;
-  market.appendChild(d);
+const CATS = ["ALL", "DeFi & Yield", "Trading & Execution", "Payments", "Data & Analytics", "Security & Risk", "Social & Support", "Infra & DevOps", "Gaming & NFT"];
+let curCat = "ALL";
+const catsEl = document.getElementById("cats");
+const marketEl = document.getElementById("market");
+
+CATS.forEach(c => {
+  const b = document.createElement("button");
+  b.className = "chip" + (c === "ALL" ? " on" : "");
+  b.textContent = c;
+  b.onclick = () => {
+    curCat = c;
+    document.querySelectorAll(".chip").forEach(el => el.classList.toggle("on", el.textContent === c));
+    renderMarket();
+  };
+  catsEl.appendChild(b);
 });
+
+function renderMarket() {
+  marketEl.innerHTML = "";
+  AGENTS.map((a, i) => ({ ...a, i }))
+    .filter(a => curCat === "ALL" || a.c === curCat)
+    .sort((x, y) => y.h - x.h)
+    .forEach(a => {
+      const d = document.createElement("div");
+      d.className = "agent";
+      d.innerHTML = `<div class="n">${a.n}</div><div class="s">${a.c}</div>
+        <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
+        <div class="st" id="st${a.i}">idle</div>
+        <button ${a.h >= 60 ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>`;
+      marketEl.appendChild(d);
+    });
+}
+renderMarket();
+
 function hire(i) {
   const a = AGENTS[i];
-  addRow("ASSIGN", `[DEMO ROUTE] client hire request → ${a.n} (HUMI ${a.h}) — gate approved, supervisor executing`, Date.now(), 0, false);
-  document.getElementById("st" + i).textContent = "HIRED — executing task";
+  addRow("ASSIGN", `[DEMO ROUTE] client hire request → ${a.n} (${a.c}, HUMI ${a.h}) — gate approved, supervisor executing`, Date.now(), 0, false);
+  const st = document.getElementById("st" + i);
+  if (st) st.textContent = "HIRED — executing task";
 }
+
 setInterval(() => {
   const i = Math.floor(Math.random() * AGENTS.length);
-  const a = AGENTS[i];
   const st = document.getElementById("st" + i);
-  if (a.h < 60) { st.textContent = "rejected by reputation gate"; return; }
+  if (!st) return;
+  if (AGENTS[i].h < 60) { st.textContent = "rejected by reputation gate"; return; }
   const states = ["scanning mempool…", "bidding on open task…", "staking & executing…", "idle"];
   st.textContent = states[Math.floor(Math.random() * states.length)];
 }, 4000);
