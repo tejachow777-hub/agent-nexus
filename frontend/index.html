@@ -87,6 +87,31 @@
 
 <div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • ranked top-tier preview • click a name for full profile<span class="simlabel">live registry + GSA scores post-hackathon</span></div>
 <div id="cats"></div>
+<div style="margin:0 0 10px"><span class="mhead" style="display:inline">SORT BY:</span>
+<select id="sortSel" style="background:#0d1420;color:var(--text);border:1px solid #1f2937;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:11px" onchange="curSort=this.value;renderMarket()">
+  <optgroup label="Institutional & Trust">
+    <option value="fit">⭐ Institutional Fit (smart)</option>
+    <option value="humi">🛡️ Highest HUMI</option>
+    <option value="zero">🌟 Curated: Zero Slashes</option>
+    <option value="settled">📈 Best Settlement History</option>
+    <option value="slashrate">📉 Lowest Slash Rate</option>
+  </optgroup>
+  <optgroup label="Pricing & Economics">
+    <option value="priceAsc">💰 Price: Low → High</option>
+    <option value="priceDesc">💎 Capital Tier: High → Low</option>
+    <option value="feeAsc">🏷️ Clearing Fee: Lowest First</option>
+  </optgroup>
+  <optgroup label="Operational Status">
+    <option value="idle">⚡ Idle / Ready First</option>
+    <option value="gate">🛡️ Gate-Approved First</option>
+  </optgroup>
+  <optgroup label="HUMI Pillars">
+    <option value="pH">📜 History Pillar</option>
+    <option value="pI">📡 Info & Audit Pillar</option>
+    <option value="pM">📐 Measure Pillar</option>
+    <option value="pU">📊 Usage Pillar</option>
+  </optgroup>
+</select></div>
 <div id="market"></div>
 
 <div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="exportAudit()">⬇ AUDIT (PDF)</span></div>
@@ -238,12 +263,32 @@ const AGENTS = [
 ];
 const CATS = ["ALL", "DeFi & Yield", "Trading & Execution", "Payments", "Data & Analytics", "Security & Risk", "Social & Support", "Infra & DevOps", "Gaming & NFT"];
 let curCat = "ALL";
+let curSort = "fit";
 const catsEl = document.getElementById("cats");
 const marketEl = document.getElementById("market");
 
 const pillars = h => { const q = Math.floor(h / 4); return [q, q, q, h - 3 * q]; };
 const priceOf = a => 0.001 + (a.h - 40) * 0.00005;
 const histOf = a => ({ done: a.h * 4, slashed: a.h >= 60 ? Math.max(0, Math.round((90 - a.h) / 8)) : Math.round((100 - a.h) / 3), up: (90 + a.h / 10).toFixed(1) });
+const slashRateOf = a => { const H = histOf(a); return H.slashed / Math.max(1, H.done + H.slashed); };
+const idleOf = a => ((document.getElementById("st" + a.i)?.textContent || "").includes("idle") ? 1 : 0);
+function fitScore(a) { return a.h * 0.6 + (histOf(a).slashed === 0 ? 25 : Math.max(0, 25 - histOf(a).slashed * 8)) + (idleOf(a) ? 15 : 0); }
+const SORTS = {
+  fit: (x, y) => fitScore(y) - fitScore(x),
+  humi: (x, y) => y.h - x.h,
+  zero: (x, y) => ((histOf(x).slashed === 0) - (histOf(y).slashed === 0)) || y.h - x.h,
+  settled: (x, y) => histOf(y).done - histOf(x).done,
+  slashrate: (x, y) => slashRateOf(x) - slashRateOf(y),
+  priceAsc: (x, y) => priceOf(x) - priceOf(y),
+  priceDesc: (x, y) => priceOf(y) - priceOf(x),
+  feeAsc: (x, y) => priceOf(x) - priceOf(y),
+  idle: (x, y) => idleOf(y) - idleOf(x) || y.h - x.h,
+  gate: (x, y) => ((y.h >= 60) - (x.h >= 60)) || y.h - x.h,
+  pH: (x, y) => pillars(y.h)[0] - pillars(x.h)[0],
+  pI: (x, y) => pillars(y.h)[1] - pillars(x.h)[1],
+  pM: (x, y) => pillars(y.h)[2] - pillars(x.h)[2],
+  pU: (x, y) => pillars(y.h)[3] - pillars(x.h)[3],
+};
 
 CATS.forEach(c => {
   const b = document.createElement("button");
@@ -276,7 +321,8 @@ function renderMarket() {
   marketEl.innerHTML = "";
   AGENTS.map((a, i) => ({ ...a, i }))
     .filter(a => curCat === "ALL" || a.c === curCat)
-    .sort((x, y) => y.h - x.h)
+    .filter(a => curSort !== "zero" || histOf(a).slashed === 0)
+    .sort(SORTS[curSort] || SORTS.fit)
     .forEach(a => {
       const d = document.createElement("div");
       d.className = "agent";
