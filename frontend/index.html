@@ -51,16 +51,34 @@ const vault = new ethers.Contract(ADDRESS, ABI, provider);
 const feed = document.getElementById("feed");
 const short = a => a.slice(0, 6) + "…" + a.slice(-4);
 const bnb = w => ethers.formatEther(w) + " BNB";
+const CACHE_KEY = "agentnexus_rows_v1";
+const seen = new Set();
 
-function addRow(type, text) {
+function addRow(type, text, ts = Date.now(), save = true) {
+  const key = type + "|" + text;
+  if (seen.has(key)) return;
+  seen.add(key);
   const div = document.createElement("div");
   div.className = "row " + type;
-  div.innerHTML = `<span class="t">${new Date().toLocaleTimeString()}</span><span class="badge">${type}</span>${text}`;
+  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${text}`;
   feed.prepend(div);
   if (type === "FIREWALL") {
     document.body.classList.add("alert");
     setTimeout(() => document.body.classList.remove("alert"), 2500);
   }
+  if (save) {
+    try {
+      const c = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
+      c.push({ type, text, ts });
+      localStorage.setItem(CACHE_KEY, JSON.stringify(c.slice(-200)));
+    } catch (e) {}
+  }
+}
+
+function loadCache() {
+  try {
+    JSON.parse(localStorage.getItem(CACHE_KEY) || "[]").forEach(r => addRow(r.type, r.text, r.ts, false));
+  } catch (e) {}
 }
 
 async function loadHistory() {
@@ -78,8 +96,8 @@ async function loadHistory() {
         vault.queryFilter(vault.filters.FirewallTriggered(), from, to),
       ]);
     } catch (err) {
-      console.warn("Chunk skipped:", err.message);
-      break; // keep whatever we already found
+      console.warn("Chunk skipped (pruned):", err.message);
+      break;
     }
     rows.push(
       ...created.map(e => ({ b: e.blockNumber, type: "ESCROW",    text: `Task #${e.args.taskId} escrowed — ${bnb(e.args.reward)} locked by ${short(e.args.client)}` })),
@@ -91,6 +109,9 @@ async function loadHistory() {
     to = from - 1;
   }
   rows.sort((x, y) => x.b - y.b).forEach(r => addRow(r.type, r.text));
+  if (rows.length === 0 && seen.size === 0) {
+    addRow("ASSIGN", "Public RPC pruned historical logs — live events stream below. Permanent record: BscScan.", Date.now(), false);
+  }
 }
 
 function listen() {
@@ -104,7 +125,8 @@ async function tick() {
   document.getElementById("tasks").textContent = (await vault.taskCounter()).toString();
 }
 
-loadHistory().then(listen).catch(e => addRow("FIREWALL", "Connection error: " + e.message));
+loadCache();
+loadHistory().then(listen).catch(e => addRow("FIREWALL", "Connection error: " + e.message, Date.now(), false));
 tick(); setInterval(tick, 8000);
 </script>
 </body>
