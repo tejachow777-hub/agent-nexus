@@ -86,8 +86,8 @@ const ABI = [
   "event AgentAssigned(uint256 indexed taskId, address indexed agent, uint256 stakeLocked)",
   "event TaskCompleted(uint256 indexed taskId, address indexed agent, uint256 rewardPaid)",
   "event FirewallTriggered(uint256 indexed taskId, address indexed rogueAgent, uint256 slashedAmount, string reason)",
-  "function createTask() payable returns (uint256)",
-  "function taskCounter() view returns (uint256)"
+  {"inputs": [], "name": "createTask", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "payable", "type": "function"},
+  {"inputs": [], "name": "taskCounter", "outputs": [{"name": "", "type": "uint256"}], "stateMutability": "view", "type": "function"}
 ];
 
 const provider = new ethers.JsonRpcProvider(RPC);
@@ -219,6 +219,9 @@ renderMarket();
 
 function openProfile(i) {
   const a = AGENTS[i], P = pillars(a.h), H = histOf(a), fee = priceOf(a) * 0.01;
+  const hireBtn = a.h >= 60
+    ? `<button style="margin-top:12px;width:100%;padding:8px;background:#052e16;color:var(--green);border:1px solid var(--green);border-radius:6px;cursor:pointer;font-family:inherit" onclick="clientEscrow(${a.i});closeModal()">${clientAddr ? "ESCROW FROM YOUR WALLET & HIRE" : "HIRE " + a.n.toUpperCase()}</button>`
+    : `<button style="margin-top:12px;width:100%;padding:8px;background:#450a0a;color:var(--red);border:1px solid var(--red);border-radius:6px;font-family:inherit" disabled>BELOW REPUTATION GATE ✕</button>`;
   document.getElementById("mbody").innerHTML = `
     <div style="font-size:16px;color:#fff;font-weight:bold">${a.n} <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span></div>
     <div style="color:var(--dim);font-size:11px;margin-top:2px">${a.c}</div>
@@ -233,8 +236,7 @@ function openProfile(i) {
     ${["History", "Information", "Measure", "Usage"].map((n, idx) =>
       `<div style="font-size:11px;margin-top:5px">${n} ${P[idx]}/25 <span style="display:inline-block;height:6px;width:${P[idx] * 4}px;background:var(--green);border-radius:3px;vertical-align:middle"></span></div>`).join("")}
     <label style="display:block;margin-top:12px;font-size:12px;color:var(--amber)"><input type="checkbox" id="ins" /> Add INSURANCE POOL coverage (+0.5% premium — extra refund layer on slash)</label>
-    <button style="margin-top:12px;width:100%;padding:8px;background:#052e16;color:var(--green);border:1px solid var(--green);border-radius:6px;cursor:pointer;font-family:inherit"
-      ${a.h >= 60 ? `onclick="clientEscrow(${a.i});closeModal()"` : "disabled"}>${a.h >= 60 ? (clientAddr ? "ESCROW FROM YOUR WALLET & HIRE" : "HIRE " + a.n.toUpperCase()) : "BELOW REPUTATION GATE ✕"}</button>`;
+    ${hireBtn}`;
   document.getElementById("modal").style.display = "flex";
 }
 function closeModal() { document.getElementById("modal").style.display = "none"; }
@@ -263,14 +265,16 @@ setInterval(() => {
 function exportAudit() {
   const rows = [...feed.querySelectorAll(".row")].reverse().map(r => r.textContent.trim());
   const w = window.open("", "_blank");
-  w.document.write(`<html><head><title>AgentNexus Compliance Report</title>
+  const html = `<html><head><title>AgentNexus Compliance Report</title>
   <style>body{font-family:monospace;padding:24px;color:#111}h1{font-size:18px}li{margin:4px 0;font-size:12px}</style></head><body>
   <h1>AGENTNEXUS — COMPLIANCE AUDIT TRAIL</h1>
   <p>Generated: ${new Date().toLocaleString()}<br>Vault: ${ADDRESS}<br>Client wallet: ${clientAddr || "demo session"}<br>Hired agent: ${hired ? hired.n + " (HUMI " + hired.h + ")" + (insured ? " — INSURED" : "") : "none this session"}</p>
   <h3>EVENT LOG</h3><ul>${rows.map(r => "<li>" + r + "</li>").join("")}</ul>
   <p>Every event above is anchored to BNB Smart Chain Testnet.<br>Verify independently: https://testnet.bscscan.com/address/${ADDRESS}</p>
-  <scr` + `ipt>window.print()</scr` + `ipt></body></html>`);
+  </body></html>`;
+  w.document.write(html);
   w.document.close();
+  setTimeout(() => { try { w.print(); } catch (e) {} }, 400);
 }
 
 /* ---------- LIVE NOTIFICATIONS (real on-chain, hire-linked) ---------- */
@@ -309,4 +313,24 @@ async function loadHistory() {
 
 function listen() {
   vault.on("TaskCreated", (taskId, client, reward) => addRow("ESCROW", `Task #${taskId} escrowed — ${ethers.formatEther(reward)} BNB locked by ${short(client)}`, Date.now(), Number(ethers.formatEther(reward))));
-  vault.on("AgentAssigned", (taskId, agent, stake) => { addRow("ASSIGN", `Agent ${short(agent)} staked ${ethers.formatEther(stake)} BNB on task #${taskId}${via()}`, Da
+  vault.on("AgentAssigned", (taskId, agent, stake) => { addRow("ASSIGN", `Agent ${short(agent)} staked ${ethers.formatEther(stake)} BNB on task #${taskId}${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`executing task #${taskId}…`); });
+  vault.on("TaskCompleted", (taskId, agent, paid) => { addRow("COMPLETE", `Task #${taskId} settled — ${ethers.formatEther(paid)} BNB released${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`task #${taskId} settled ✔`); });
+  vault.on("FirewallTriggered", (taskId, rogue, slashed, reason) => { addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed. Reason: ${reason}${via()}${hired && insured ? " • INSURANCE POOL refund layer activated" : ""}`, Date.now(), 0, true, !!hired); hiredStatus(`SLASHED on task #${taskId} ✖`); });
+}
+
+async function tick() {
+  document.getElementById("sTasks").textContent = (await vault.taskCounter()).toString();
+}
+
+loadCache();
+loadHistory().then(listen).catch(e => addRow("FIREWALL", "Connection error: " + e.message, Date.now(), 0, false));
+tick(); setInterval(tick, 8000);
+</script>
+<script>
+window.addEventListener("error", function (e) {
+  var f = document.getElementById("feed");
+  if (f) f.innerHTML = '<div class="row FIREWALL">SCRIPT ERROR line ' + e.lineno + ': ' + e.message + ' — screenshot this and send to co-founder</div>';
+});
+</script>
+</body>
+</html>
