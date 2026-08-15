@@ -36,7 +36,7 @@
 <div id="feed"></div>
 
 <script>
-const RPC = "https://bsc-testnet.publicnode.com";
+const RPC = "https://data-seed-prebsc-1-s1.bnbchain.org:8545";
 const ADDRESS = "0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB";
 const ABI = [
   "event TaskCreated(uint256 indexed taskId, address indexed client, uint256 reward)",
@@ -69,12 +69,18 @@ async function loadHistory() {
   let to = latest;
   for (let chunk = 0; chunk < 10 && to > 0; chunk++) {
     const from = Math.max(0, to - 9999);
-    const [created, assigned, completed, fired] = await Promise.all([
-      vault.queryFilter(vault.filters.TaskCreated(), from, to),
-      vault.queryFilter(vault.filters.AgentAssigned(), from, to),
-      vault.queryFilter(vault.filters.TaskCompleted(), from, to),
-      vault.queryFilter(vault.filters.FirewallTriggered(), from, to),
-    ]);
+    let created = [], assigned = [], completed = [], fired = [];
+    try {
+      [created, assigned, completed, fired] = await Promise.all([
+        vault.queryFilter(vault.filters.TaskCreated(), from, to),
+        vault.queryFilter(vault.filters.AgentAssigned(), from, to),
+        vault.queryFilter(vault.filters.TaskCompleted(), from, to),
+        vault.queryFilter(vault.filters.FirewallTriggered(), from, to),
+      ]);
+    } catch (err) {
+      console.warn("Chunk skipped:", err.message);
+      break; // keep whatever we already found
+    }
     rows.push(
       ...created.map(e => ({ b: e.blockNumber, type: "ESCROW",    text: `Task #${e.args.taskId} escrowed — ${bnb(e.args.reward)} locked by ${short(e.args.client)}` })),
       ...assigned.map(e => ({ b: e.blockNumber, type: "ASSIGN",   text: `Agent ${short(e.args.agent)} staked ${bnb(e.args.stakeLocked)} on task #${e.args.taskId}` })),
