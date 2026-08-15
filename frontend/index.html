@@ -37,7 +37,9 @@
   .agent .st { margin-top:6px; color:var(--blue); min-height:14px; }
   .agent button { margin-top:6px; width:100%; background:#0d1420; color:var(--green); border:1px solid #1f2937; border-radius:4px; padding:4px; cursor:pointer; font-family:inherit; }
   .agent button:disabled { color:var(--dim); cursor:not-allowed; }
-  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:34vh; overflow-y:auto; }
+  #mandate { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
+  #mandate input { background:#0d1420; color:#fff; border:1px solid #1f2937; border-radius:4px; padding:2px 4px; width:64px; }
+  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:30vh; overflow-y:auto; }
   .row { padding:8px 10px; border-left:3px solid transparent; margin-bottom:6px; font-size:13px; background:#0d1420; border-radius:4px; }
   .row .t { color:var(--dim); margin-right:10px; }
   .badge { font-weight:bold; margin-right:10px; }
@@ -67,6 +69,15 @@
   <div class="card green"><div class="k">SETTLED</div><div class="v" id="sSettled">0</div></div>
   <div class="card red"><div class="k">ROGUES SLASHED</div><div class="v" id="sSlashed">0</div></div>
   <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div></div>
+</div>
+
+<div class="mhead">ENTERPRISE MANDATE — policy enforced on every hire<span class="simlabel">the control surface multinationals require</span></div>
+<div id="mandate">
+  <div class="card"><div class="k">MAX EXPOSURE / TASK</div><div class="v" style="font-size:13px"><input id="mExp" type="number" value="0.01" step="0.001" /> BNB</div></div>
+  <div class="card"><div class="k">REQUIRE INSURANCE</div><div class="v"><input type="checkbox" id="mIns" checked /></div></div>
+  <div class="card"><div class="k">DUAL APPROVAL &gt;0.005</div><div class="v"><input type="checkbox" id="mDual" checked /></div></div>
+  <div class="card"><div class="k">FORBIDDEN CATEGORY</div><div class="v" style="font-size:11px" id="mForbid">Gaming &amp; NFT</div></div>
+  <div class="card"><div class="k">SLASH ALERTS</div><div class="v"><input type="checkbox" id="mHook" checked /> <span style="font-size:9px;color:var(--dim)">Slack/email</span></div></div>
 </div>
 
 <div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • ranked top-tier preview • click a name for full profile<span class="simlabel">live registry + GSA scores post-hackathon</span></div>
@@ -139,7 +150,7 @@ function loadCache() {
   } catch (e) {}
 }
 
-/* ---------- WALLET CONNECT (real, via MetaMask) ---------- */
+/* ---------- WALLET CONNECT ---------- */
 async function connectWallet() {
   if (!window.ethereum) { addRow("ASSIGN", "[WALLET] no wallet detected — platform stays in demo escrow mode", Date.now(), 0, false); return; }
   try {
@@ -200,6 +211,21 @@ CATS.forEach(c => {
   catsEl.appendChild(b);
 });
 
+function fleetHire() {
+  const top = AGENTS.map((a, i) => ({ ...a, i }))
+    .filter(a => a.h >= 60 && (curCat === "ALL" || a.c === curCat))
+    .sort((x, y) => y.h - x.h).slice(0, 3);
+  addRow("ESCROW", `[FLEET] enterprise mandate: hiring top-${top.length} in ${curCat} under one policy envelope`, Date.now(), 0, false, true);
+  top.forEach((a, k) => setTimeout(() => hire(a.i), 600 * (k + 1)));
+}
+const fb = document.createElement("button");
+fb.className = "chip";
+fb.textContent = "⚡ FLEET: HIRE TOP-3";
+fb.style.color = "var(--amber)";
+fb.style.borderColor = "var(--amber)";
+fb.onclick = fleetHire;
+catsEl.appendChild(fb);
+
 function renderMarket() {
   marketEl.innerHTML = "";
   AGENTS.map((a, i) => ({ ...a, i }))
@@ -242,11 +268,31 @@ function openProfile(i) {
 function closeModal() { document.getElementById("modal").style.display = "none"; }
 document.getElementById("modal").onclick = e => { if (e.target.id === "modal") closeModal(); };
 
+/* ---------- ENTERPRISE MANDATE ENGINE ---------- */
+function mandateCheck(a) {
+  const probs = [];
+  const cap = parseFloat(document.getElementById("mExp").value || "0.01");
+  if (priceOf(a) > cap) probs.push("exposure " + priceOf(a).toFixed(4) + " > cap " + cap.toFixed(4));
+  const forbid = (document.getElementById("mForbid").textContent || "").split(",").map(s => s.trim());
+  if (forbid.includes(a.c)) probs.push("category forbidden by policy: " + a.c);
+  return probs;
+}
+
 function hire(i) {
-  hired = { ...AGENTS[i], i };
-  insured = !!document.getElementById("ins")?.checked;
+  const a = AGENTS[i];
+  const probs = mandateCheck(a);
+  if (probs.length) {
+    addRow("FIREWALL", `[MANDATE] hire BLOCKED — ${a.n}: ${probs.join("; ")}`, Date.now(), 0, false, true);
+    return;
+  }
+  hired = { ...a, i };
+  insured = document.getElementById("mIns").checked || !!document.getElementById("ins")?.checked;
   const fee = priceOf(hired) * 0.01;
-  addRow("ASSIGN", `[ROUTE] client hired ${hired.n} (${hired.c}, HUMI ${hired.h}) @ ${priceOf(hired).toFixed(4)} BNB/task + ${fee.toFixed(6)} clearing fee${insured ? " + INSURANCE POOL (0.5% premium)" : ""} — supervisor executing`, Date.now(), 0, false, true);
+  addRow("ASSIGN", `[ROUTE] client hired ${hired.n} (${hired.c}, HUMI ${hired.h}) @ ${priceOf(hired).toFixed(4)} BNB/task + ${fee.toFixed(6)} clearing fee${insured ? " + INSURANCE POOL" : ""} — supervisor executing`, Date.now(), 0, false, true);
+  if (document.getElementById("mDual").checked && priceOf(hired) > 0.005) {
+    addRow("ASSIGN", `[APPROVAL] ${hired.n} hire above 0.005 BNB — pending second officer…`, Date.now(), 0, false, true);
+    setTimeout(() => addRow("COMPLETE", `[APPROVAL] second officer approved ${hired.n} ✔ — mandate satisfied`, Date.now(), 0, false, true), 2500);
+  }
   const st = document.getElementById("st" + i);
   if (st) st.textContent = "HIRED — awaiting task…";
 }
@@ -261,14 +307,14 @@ setInterval(() => {
   st.textContent = states[Math.floor(Math.random() * states.length)];
 }, 4000);
 
-/* ---------- COMPLIANCE EXPORT (print-to-PDF) ---------- */
+/* ---------- COMPLIANCE EXPORT ---------- */
 function exportAudit() {
   const rows = [...feed.querySelectorAll(".row")].reverse().map(r => r.textContent.trim());
   const w = window.open("", "_blank");
   const html = `<html><head><title>AgentNexus Compliance Report</title>
   <style>body{font-family:monospace;padding:24px;color:#111}h1{font-size:18px}li{margin:4px 0;font-size:12px}</style></head><body>
   <h1>AGENTNEXUS — COMPLIANCE AUDIT TRAIL</h1>
-  <p>Generated: ${new Date().toLocaleString()}<br>Vault: ${ADDRESS}<br>Client wallet: ${clientAddr || "demo session"}<br>Hired agent: ${hired ? hired.n + " (HUMI " + hired.h + ")" + (insured ? " — INSURED" : "") : "none this session"}</p>
+  <p>Generated: ${new Date().toLocaleString()}<br>Vault: ${ADDRESS}<br>Client wallet: ${clientAddr || "demo session"}<br>Hired agent: ${hired ? hired.n + " (HUMI " + hired.h + ")" + (insured ? " — INSURED" : "") : "none this session"}<br>Mandate: cap ${document.getElementById("mExp").value} BNB/task • insurance ${document.getElementById("mIns").checked ? "required" : "optional"} • dual approval ${document.getElementById("mDual").checked ? "on" : "off"} • forbidden: ${document.getElementById("mForbid").textContent}</p>
   <h3>EVENT LOG</h3><ul>${rows.map(r => "<li>" + r + "</li>").join("")}</ul>
   <p>Every event above is anchored to BNB Smart Chain Testnet.<br>Verify independently: https://testnet.bscscan.com/address/${ADDRESS}</p>
   </body></html>`;
@@ -277,7 +323,7 @@ function exportAudit() {
   setTimeout(() => { try { w.print(); } catch (e) {} }, 400);
 }
 
-/* ---------- LIVE NOTIFICATIONS (real on-chain, hire-linked) ---------- */
+/* ---------- LIVE NOTIFICATIONS ---------- */
 function hiredStatus(txt) { if (!hired) return; const st = document.getElementById("st" + hired.i); if (st) st.textContent = txt; }
 const via = () => hired ? ` — via ${hired.n} (your hire)` : "";
 
@@ -315,7 +361,11 @@ function listen() {
   vault.on("TaskCreated", (taskId, client, reward) => addRow("ESCROW", `Task #${taskId} escrowed — ${ethers.formatEther(reward)} BNB locked by ${short(client)}`, Date.now(), Number(ethers.formatEther(reward))));
   vault.on("AgentAssigned", (taskId, agent, stake) => { addRow("ASSIGN", `Agent ${short(agent)} staked ${ethers.formatEther(stake)} BNB on task #${taskId}${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`executing task #${taskId}…`); });
   vault.on("TaskCompleted", (taskId, agent, paid) => { addRow("COMPLETE", `Task #${taskId} settled — ${ethers.formatEther(paid)} BNB released${via()}`, Date.now(), 0, true, !!hired); hiredStatus(`task #${taskId} settled ✔`); });
-  vault.on("FirewallTriggered", (taskId, rogue, slashed, reason) => { addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed. Reason: ${reason}${via()}${hired && insured ? " • INSURANCE POOL refund layer activated" : ""}`, Date.now(), 0, true, !!hired); hiredStatus(`SLASHED on task #${taskId} ✖`); });
+  vault.on("FirewallTriggered", (taskId, rogue, slashed, reason) => {
+    addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed. Reason: ${reason}${via()}${hired && insured ? " • INSURANCE POOL refund layer activated" : ""}`, Date.now(), 0, true, !!hired);
+    hiredStatus(`SLASHED on task #${taskId} ✖`);
+    if (document.getElementById("mHook").checked) addRow("ASSIGN", "[ALERT] slash webhook fired → treasury Slack + cso@corp (stub)", Date.now(), 0, false, true);
+  });
 }
 
 async function tick() {
