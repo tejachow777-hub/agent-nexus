@@ -25,16 +25,17 @@
   .card { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px 12px; position:relative; }
   .card .k { color:var(--dim); font-size:10px; letter-spacing:1px; }
   .card .v { color:#fff; font-size:20px; margin-top:4px; }
-  .card.amber .v { color:var(--amber); } .card.green .v { color:var(--green); } .card.red .v { color:var(--red); } .card.blue .v { color:var(--blue); } .card.purple .v { color:var(--purple); }
+  .card.amber .v { color:var(--amber); } .card.green .v { color:var(--green); } .card.red .v { color:#dc2626; text-shadow:0 0 8px rgba(220,38,38,.45); } .card.blue .v { color:var(--blue); } .card.purple .v { color:var(--purple); }
   .tip { display:none; position:absolute; top:calc(100% + 6px); left:0; width:280px; background:#0d1420; border:1px solid #1f2937; border-radius:6px; padding:8px 10px; font-size:10px; color:var(--text); z-index:40; line-height:1.6; }
   .card:hover .tip { display:block; }
-  .mhead { color:var(--dim); font-size:11px; letter-spacing:1px; margin-bottom:8px; }
+  .mhead { color:#94a3b8; font-size:11px; letter-spacing:1px; margin-bottom:8px; }
   .simlabel { color:var(--purple); font-size:10px; margin-left:8px; }
   #q { width:230px; background:#0d1420; border:1px solid #1f2937; color:var(--text); border-radius:999px; padding:6px 14px; font-family:inherit; font-size:11px; }
   #q:focus { outline:1px solid var(--green); }
   #cats, #refs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; align-items:center; }
   #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:14px; }
   .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; }
+  .agent.blocked { border:1px solid var(--red); }
   .agent .n { color:#fff; font-size:12px; font-weight:bold; cursor:pointer; }
   .agent .n:hover { color:var(--blue); }
   .agent .s { color:var(--dim); margin:4px 0; }
@@ -43,6 +44,11 @@
   .gS { background:#3a2b00; color:var(--amber); } .gA { background:#052e16; color:var(--green); } .gB { background:#082f49; color:var(--blue); } .gC { background:#450a0a; color:var(--red); }
   .tags { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
   .tag { background:#0d1420; border:1px solid #1f2937; color:var(--dim); border-radius:4px; padding:1px 6px; font-size:9px; }
+  .lockbadge { display:inline-block; margin-top:4px; background:#450a0a; color:var(--red); border:1px solid var(--red); border-radius:4px; padding:1px 6px; font-size:9px; font-weight:bold; }
+  .pwrap { position:relative; cursor:help; }
+  .ptip { display:none; position:absolute; top:calc(100% + 4px); left:-40px; width:180px; background:#0d1420; border:1px solid #1f2937; border-radius:6px; padding:6px 8px; font-size:9px; color:var(--text); z-index:45; line-height:1.5; }
+  .pwrap:hover .ptip { display:block; }
+  #exec { white-space:pre-wrap; font-size:11px; color:var(--green); background:#0d1420; border:1px solid #1f2937; border-radius:6px; padding:10px; height:180px; overflow-y:auto; margin-top:10px; }
   .humi { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:bold; }
   .humi.ok { background:#052e16; color:var(--green); }
   .humi.bad { background:#450a0a; color:var(--red); }
@@ -52,7 +58,7 @@
   #tray { display:none; background:#0d1420; border:1px solid var(--amber); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; }
   #mandate { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin:10px 0 14px; }
   #mandate input { background:#0d1420; color:#fff; border:1px solid #1f2937; border-radius:4px; padding:2px 4px; width:64px; }
-  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:30vh; overflow-y:auto; }
+  #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:560px; overflow-y:auto; }
   .row { padding:8px 10px; border-left:3px solid transparent; margin-bottom:6px; font-size:13px; background:#0d1420; border-radius:4px; }
   .row .t { color:var(--dim); margin-right:10px; }
   .badge { font-weight:bold; margin-right:10px; }
@@ -74,6 +80,7 @@
   <h1>AGENT<span>NEXUS</span> // INSTITUTIONAL AGENT CLEARINGHOUSE</h1>
   <div style="display:flex;align-items:center;gap:12px">
     <input id="q" placeholder="🔍 search: name, tag, category…" oninput="curQ=this.value.toLowerCase();renderMarket()" />
+    <span id="health" style="color:var(--dim);font-size:10px">RPC …ms • block … • feed synced ✔</span>
     <div class="live"><span class="dot"></span>LIVE — BSC TESTNET</div>
   </div>
 </header>
@@ -88,7 +95,7 @@
   <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div><div class="tip" id="tipRate"></div></div>
 </div>
 
-<details><summary style="cursor:pointer;color:var(--dim);font-size:11px;letter-spacing:1px;margin-bottom:10px">🏦 ENTERPRISE MANDATE — ACTIVE POLICY: cap 0.01 BNB/task • insurance ✔ • dual approval ✔ • forbidden: Gaming &amp; NFT <span class="simlabel">click to configure</span></summary>
+<details><summary style="cursor:pointer;color:#94a3b8;font-size:11px;letter-spacing:1px;margin-bottom:10px">🏦 ENTERPRISE MANDATE — ACTIVE POLICY: cap 0.01 BNB/task • insurance ✔ • dual approval ✔ • forbidden: Gaming &amp; NFT <span class="simlabel">click to configure</span></summary>
 <div id="mandate">
   <div class="card"><div class="k">MAX EXPOSURE / TASK</div><div class="v" style="font-size:13px"><input id="mExp" type="number" value="0.01" step="0.001" /> BNB</div></div>
   <div class="card"><div class="k">REQUIRE INSURANCE</div><div class="v"><input type="checkbox" id="mIns" checked /></div></div>
@@ -130,7 +137,7 @@
 <div id="market"></div>
 <div id="tray"></div>
 
-<div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="exportAudit()">⬇ AUDIT (PDF)</span></div>
+<div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="exportAudit()">⬇ AUDIT (PDF)</span> &nbsp;<span class="chip" style="color:var(--red);border-color:var(--red)" onclick="fireDrill()">⚡ RUN FIRE DRILL</span></div>
 <div id="feed"></div>
 
 <div id="modal"><div id="mbox"><button id="mclose" onclick="closeModal()">✕</button><div id="mbody"></div></div></div>
@@ -194,14 +201,17 @@ function addRow(type, text, ts = Date.now(), value = 0, save = true, mine = fals
   const key = type + "|" + text;
   if (seen.has(key)) return;
   seen.add(key);
+  const drill = text.startsWith("[DRILL]");
   if (!ledger.keys[key]) {
     ledger.keys[key] = 1;
-    if (type === "COMPLETE") ledger.settled++;
-    if (type === "FIREWALL") ledger.slashed++;
-    persistLedger();
+    if (!drill) {
+      if (type === "COMPLETE") ledger.settled++;
+      if (type === "FIREWALL") ledger.slashed++;
+      persistLedger();
+    }
   }
   const mm = text.match(/#(\d+)/);
-  if (mm) {
+  if (mm && !drill) {
     const tid = Number(mm[1]);
     if (type === "FIREWALL") {
       const name = rogueName(tid);
@@ -219,7 +229,8 @@ function addRow(type, text, ts = Date.now(), value = 0, save = true, mine = fals
   const div = document.createElement("div");
   div.className = "row " + type + (mine ? " mine" : "");
   const tag = type === "FIREWALL" ? '<span class="killtag">⚠ KILL-SWITCH</span>' : "";
-  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${tag}${text}`;
+  const linked = text.replace(/#(\d+)/g, '<a href="https://testnet.bscscan.com/address/' + ADDRESS + '" target="_blank" style="color:var(--blue)">#$1</a>');
+  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${tag}${linked}`;
   feed.prepend(div);
   if (type === "FIREWALL") {
     document.body.classList.add("alert");
@@ -310,7 +321,7 @@ function genCat(cat, seed){
 const CURATED = AGENTS.slice();
 function renderPager(){
   document.getElementById("pager").innerHTML =
-    `<span class="chip" onclick="gotoPage(${page-1})">◀</span> <span style="color:var(--text)">REGISTRY PAGE ${page.toLocaleString()} / ${TOTAL_PAGES.toLocaleString()} • showing ${AGENTS.length} of 200,000+</span> <span class="chip" onclick="gotoPage(${page+1})">▶</span> <span class="chip" style="color:var(--purple);border-color:var(--purple)" onclick="surfaceTop()">🎲 SURFACE TOP PERFORMERS</span>`;
+    `<span class="chip" onclick="gotoPage(${page-1})">◀</span> <span style="color:var(--text)">REGISTRY PAGE ${page.toLocaleString()} / ${TOTAL_PAGES.toLocaleString()} • showing ${AGENTS.length} of 200,000+ • <span style="color:var(--dim)">index: preview • enforcement: LIVE on-chain</span></span> <span class="chip" onclick="gotoPage(${page+1})">▶</span> <span class="chip" style="color:var(--purple);border-color:var(--purple)" onclick="surfaceTop()">🎲 SURFACE TOP PERFORMERS</span>`;
 }
 function gotoPage(p){
   page = Math.min(TOTAL_PAGES, Math.max(1, p));
@@ -470,6 +481,23 @@ function openX402() {
   document.getElementById("modal").style.display = "flex";
 }
 
+const EXEC = {
+  "health-factor": ["▸ telemetry: loan book scanned — 14 positions", "▸ current health factor: 1.84 (min 1.50)", "▸ drift detected on position #7 — rebalancing…", "▸ rebalance executed via PancakeSwap V3", "▸ gas: 0.0004 BNB • slippage 0.12%", "▸ x402 invoice settled — reward released"],
+  "DeFi & Yield": ["▸ scanning blue-chip pools (APY > 6%)…", "▸ best risk-adjusted: stkBNB @ 7.2% APY", "▸ deploying 0.002 BNB via Venus strategy", "▸ position opened — drawdown cap armed", "▸ gas: 0.0003 BNB", "▸ x402 invoice settled — reward released"],
+  "Trading & Execution": ["▸ order book snapshot — spread 0.08%", "▸ slicing 3 limit orders inside mandate", "▸ fills: 100% • slippage 0.05% (cap 0.30%)", "▸ gas: 0.0005 BNB", "▸ x402 invoice settled — reward released"],
+  "Security & Risk": ["▸ watching approvals on vault 0x547c…CBEB", "▸ UNLIMITED approve → 0xdead… flagged", "▸ approval revoked in 1.2s", "▸ counterparty risk score: 12/100", "▸ x402 invoice settled — reward released"],
+  "default": ["▸ task payload accepted — validating mandate", "▸ executing within policy envelope…", "▸ proof of work submitted", "▸ gas: 0.0004 BNB", "▸ x402 invoice settled — reward released"]
+};
+function openExec(a) {
+  const lines = a.tags.includes("health-factor") ? EXEC["health-factor"] : (EXEC[a.c] || EXEC["default"]);
+  document.getElementById("mbody").innerHTML = `
+    <div style="font-size:16px;color:#fff;font-weight:bold">${a.ava} ${a.n} — LIVE EXECUTION <span class="simlabel">telemetry preview</span></div>
+    <div id="exec"></div>`;
+  document.getElementById("modal").style.display = "flex";
+  const box = document.getElementById("exec");
+  lines.forEach((l, i) => setTimeout(() => { box.innerHTML += l + "\n"; box.scrollTop = box.scrollHeight; }, 450 * (i + 1)));
+}
+
 function openList() {
   document.getElementById("mbody").innerHTML = `
     <div style="font-size:16px;color:#fff;font-weight:bold">+ LIST YOUR AGENT — ERC-8004 REQUIREMENTS</div>
@@ -494,15 +522,19 @@ function renderMarket() {
     .sort(SORTS[curSort] || SORTS.fit)
     .forEach(a => {
       const [gc, gl] = gradeOf(a.h);
+      const P = pillars(a.h);
+      const forbid = (document.getElementById("mForbid").textContent || "").split(",").map(s => s.trim());
+      const blocked = forbid.includes(a.c);
       const d = document.createElement("div");
-      d.className = "agent";
-      d.innerHTML = `<div style="display:flex;align-items:center;gap:6px"><span class="ava">${a.ava}</span><div class="n" onclick="openProfile(${a.i})">${a.n} ⓘ</div><span class="grade ${gc}">${gl}</span></div>
+      d.className = "agent" + (blocked ? " blocked" : "");
+      d.innerHTML = `<div style="display:flex;align-items:center;gap:6px"><span class="ava">${a.ava}</span><div class="n" onclick="openProfile(${a.i})">${a.n} <span class="pwrap">ⓘ<span class="ptip">History ${P[0]}/25 • Info ${P[1]}/25<br>Measure ${P[2]}/25 • Usage ${P[3]}/25<br>HUMI ${a.h}/100</span></span></div><span class="grade ${gc}">${gl}</span></div>
         <div class="s">${a.c}</div>
         <div class="tags">${a.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
         <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
+        ${blocked ? '<span class="lockbadge">[BLOCKED BY POLICY]</span>' : (a.h < 60 ? '<span class="lockbadge" style="background:#111827;color:var(--dim);border-color:#1f2937">[GATE ✕ HUMI &lt; 60]</span>' : "")}
         <div class="st" id="st${a.i}">idle</div>
         <div style="display:flex;gap:6px">
-          <button style="flex:2" ${a.h >= 60 ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>
+          <button style="flex:2" ${a.h >= 60 && !blocked ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>
           <button style="flex:1" onclick="toggleCompare(${a.i})">⚖</button>
         </div>`;
       marketEl.appendChild(d);
@@ -562,6 +594,7 @@ function hire(i) {
   }
   const st = document.getElementById("st" + i);
   if (st) st.textContent = "HIRED — awaiting task…";
+  openExec(a);
 }
 
 setInterval(() => {
@@ -573,6 +606,15 @@ setInterval(() => {
   const states = ["scanning mempool…", "bidding on open task…", "staking & executing…", "idle"];
   st.textContent = states[Math.floor(Math.random() * states.length)];
 }, 4000);
+
+function fireDrill() {
+  const victim = AGENTS[Math.floor(Math.random() * AGENTS.length)];
+  const tid = 9000 + Math.floor(Math.random() * 999);
+  addRow("FIREWALL", `[DRILL] KILL SWITCH on task #${tid} — 0.001 BNB slashed from ${victim.n}. Reason: DRILL — unauthorized counterparty probe`, Date.now(), 0, false, true);
+  addRow("ASSIGN", "[DRILL] slash webhook fired → treasury Slack + cso@corp (drill mode — on-chain stats untouched)", Date.now(), 0, false, true);
+  const st = document.getElementById("st" + AGENTS.indexOf(victim));
+  if (st) st.textContent = "DRILL: slashed & quarantined ✖";
+}
 
 /* ---------- COMPLIANCE EXPORT ---------- */
 function exportAudit() {
@@ -635,8 +677,12 @@ function listen() {
   });
 }
 
-/* ---------- CHAIN-ANCHORED STATS + TIPS ---------- */
+/* ---------- CHAIN-ANCHORED STATS + TIPS + HEALTH ---------- */
 async function tick() {
+  const t0 = performance.now();
+  const latest = await provider.getBlockNumber();
+  const ms = Math.round(performance.now() - t0);
+  document.getElementById("health").innerHTML = `RPC ${ms}ms • block ${latest.toLocaleString()} • feed synced ✔`;
   const T = Number(await vault.taskCounter());
   const done = ledger.settled + ledger.slashed;
   const rate = done ? ledger.slashed / done : 0.2;
