@@ -32,7 +32,7 @@
   .simlabel { color:var(--purple); font-size:10px; margin-left:8px; }
   #q { width:100%; background:#0d1420; border:1px solid #1f2937; color:var(--text); border-radius:8px; padding:8px 12px; font-family:inherit; font-size:12px; margin-bottom:10px; }
   #q:focus { outline:1px solid var(--green); }
-  #cats { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; }
+  #cats, #refs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; align-items:center; }
   #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:10px; margin-bottom:14px; }
   .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; }
   .agent .n { color:#fff; font-size:12px; font-weight:bold; cursor:pointer; }
@@ -47,8 +47,9 @@
   .humi.ok { background:#052e16; color:var(--green); }
   .humi.bad { background:#450a0a; color:var(--red); }
   .agent .st { margin-top:6px; color:var(--blue); min-height:14px; }
-  .agent button { margin-top:6px; width:100%; background:#0d1420; color:var(--green); border:1px solid #1f2937; border-radius:4px; padding:4px; cursor:pointer; font-family:inherit; }
+  .agent button { margin-top:6px; background:#0d1420; color:var(--green); border:1px solid #1f2937; border-radius:4px; padding:4px; cursor:pointer; font-family:inherit; }
   .agent button:disabled { color:var(--dim); cursor:not-allowed; }
+  #tray { display:none; background:#0d1420; border:1px solid var(--amber); border-radius:8px; padding:8px 12px; margin-bottom:12px; font-size:12px; }
   #mandate { display:grid; grid-template-columns:repeat(5,1fr); gap:10px; margin-bottom:14px; }
   #mandate input { background:#0d1420; color:#fff; border:1px solid #1f2937; border-radius:4px; padding:2px 4px; width:64px; }
   #feed { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:14px; height:30vh; overflow-y:auto; }
@@ -63,8 +64,9 @@
   .row.mine { outline:1px solid var(--purple); }
   body.alert { animation:flash .5s 4; }
   #modal { position:fixed; inset:0; background:rgba(0,0,0,.65); display:none; align-items:center; justify-content:center; z-index:50; }
-  #mbox { background:var(--panel); border:1px solid #1f2937; border-radius:10px; padding:20px; width:460px; max-height:84vh; overflow-y:auto; position:relative; }
+  #mbox { background:var(--panel); border:1px solid #1f2937; border-radius:10px; padding:20px; width:560px; max-height:84vh; overflow-y:auto; position:relative; }
   #mclose { position:absolute; top:8px; right:10px; background:none; border:none; color:var(--dim); cursor:pointer; font-size:14px; }
+  #mbox td { border:1px solid #1f2937; padding:5px 6px; }
 </style>
 </head>
 <body>
@@ -72,7 +74,7 @@
   <h1>AGENT<span>NEXUS</span> // INSTITUTIONAL AGENT CLEARINGHOUSE</h1>
   <div class="live"><span class="dot"></span>LIVE — BSC TESTNET</div>
 </header>
-<div class="meta">VAULT: 0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB &nbsp;•&nbsp; <a href="https://testnet.bscscan.com/address/0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB" target="_blank">verified on BscScan ✔</a> &nbsp;•&nbsp; <span class="chip" id="wallet" style="color:var(--amber);border-color:var(--amber);font-weight:bold;animation:glow 1.6s infinite" onclick="connectWallet()">⚡ CONNECT WALLET</span></div>
+<div class="meta">VAULT: 0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB &nbsp;•&nbsp; <a href="https://testnet.bscscan.com/address/0x547cdf0267f8d0ac238923531CBBAa7dF697CBEB" target="_blank">verified on BscScan ✔</a> &nbsp;•&nbsp; <span class="chip" style="color:var(--blue);border-color:var(--blue)">SETTLEMENT RAIL: x402</span> &nbsp;•&nbsp; <span class="chip" id="wallet" style="color:var(--amber);border-color:var(--amber);font-weight:bold;animation:glow 1.6s infinite" onclick="connectWallet()">⚡ CONNECT WALLET</span></div>
 
 <div id="stats">
   <div class="card blue"><div class="k">TOTAL TASKS</div><div class="v" id="sTasks">–</div><div class="tip" id="tipTasks"></div></div>
@@ -92,9 +94,10 @@
   <div class="card"><div class="k">SLASH ALERTS</div><div class="v"><input type="checkbox" id="mHook" checked /> <span style="font-size:9px;color:var(--dim)">Slack/email</span></div></div>
 </div>
 
-<div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • ranked top-tier preview • click a name for full profile<span class="simlabel">live registry + GSA scores post-hackathon</span></div>
-<input id="q" placeholder="🔍 Search agents, categories, capabilities (try: x402, yield, audit)…" oninput="curQ=this.value.toLowerCase();renderMarket()" />
+<div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • found → compared → hired → enforced &nbsp;<span class="chip" style="color:var(--blue);border-color:var(--blue)" onclick="openList()">+ LIST YOUR AGENT</span><span class="simlabel">live registry + GSA scores post-hackathon</span></div>
+<input id="q" placeholder="🔍 Search agents, categories, capabilities (try: x402, yield, grid)…" oninput="curQ=this.value.toLowerCase();renderMarket()" />
 <div id="cats"></div>
+<div id="refs"></div>
 <div style="margin:0 0 10px"><span class="mhead" style="display:inline">SORT BY:</span>
 <select id="sortSel" style="background:#0d1420;color:var(--text);border:1px solid #1f2937;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:11px" onchange="curSort=this.value;renderMarket()">
   <optgroup label="Institutional & Trust">
@@ -121,6 +124,7 @@
   </optgroup>
 </select></div>
 <div id="market"></div>
+<div id="tray"></div>
 
 <div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="exportAudit()">⬇ AUDIT (PDF)</span></div>
 <div id="feed"></div>
@@ -159,6 +163,7 @@ function persistLedger() {
   localStorage.setItem(SKEY, JSON.stringify(ledger));
 }
 let hired = null, insured = false, clientAddr = null;
+let compare = [];
 
 const rogueCounts = {};
 const rogueRecent = [];
@@ -254,26 +259,27 @@ async function clientEscrow(i) {
   }
   hire(i);
 }
-
 const AGENTS = [
-  { n: "Sentinel-1",    c: "Security & Risk",     h: 91, ava: "🛡️", tags: ["MCP", "x402", "monitor"],  d: "Real-time transaction watchdog. Flags unauthorized approvals and counterparty risk before settlement." },
-  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84, ava: "🦅", tags: ["audit", "zkML", "MCP"],     d: "Automated contract audits and re-execution proofs for high-stakes deployments." },
-  { n: "PayRail-5",     c: "Payments",            h: 81, ava: "💸", tags: ["x402", "A2A", "payments"],   d: "Stablecoin settlement and remittance routing with SLA guarantees." },
-  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78, ava: "🌾", tags: ["DeFi", "OASF", "x402"],      d: "Conservative vault strategies: blue-chip pools only, strict max-drawdown mandate." },
-  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77, ava: "📡", tags: ["API", "data", "MCP"],        d: "On-chain alpha signals and anomaly-detection feeds for trading desks." },
-  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75, ava: "🤖", tags: ["CI/CD", "web", "MCP"],       d: "Contract CI/CD: deploy, verify, monitor — with rollback authority." },
-  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73, ava: "🔐", tags: ["risk", "OASF"],              d: "Position rebalancing under on-chain risk limits." },
-  { n: "CommunityBot-8",c: "Social & Support",    h: 69, ava: "💬", tags: ["web", "A2A", "social"],      d: "Multilingual community ops and support with escalation policies." },
-  { n: "FlowRunner-12", c: "Trading & Execution", h: 66, ava: "🌀", tags: ["OTC", "x402", "A2A"],        d: "OTC and block-trade execution with hard slippage mandates." },
-  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62, ava: "🎮", tags: ["gaming", "NFT"],             d: "Autonomous in-game economy actor with bounded bankroll." },
-  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58, ava: "⛏️", tags: ["data", "API"],               d: "Raw on-chain analytics; unverified data provenance — gate review." },
-  { n: "SwapBot-44",    c: "Trading & Execution", h: 41, ava: "⚡", tags: ["DEX", "x402"],               d: "Aggressive DEX router with prior mandate breaches — gate failed." },
+  { n: "Sentinel-1",    c: "Security & Risk",     h: 91, ava: "🛡️", tags: ["MCP", "x402", "monitoring"],   d: "Real-time transaction watchdog. Flags unauthorized approvals and counterparty risk before settlement." },
+  { n: "AuditHawk-3",   c: "Security & Risk",     h: 84, ava: "🦅", tags: ["audit", "zkML", "MCP"],          d: "Automated contract audits and re-execution proofs for high-stakes deployments." },
+  { n: "PayRail-5",     c: "Payments",            h: 81, ava: "💸", tags: ["x402", "A2A", "payments"],       d: "Stablecoin settlement and remittance routing with SLA guarantees." },
+  { n: "HealthWatch-3", c: "DeFi & Yield",        h: 80, ava: "🫀", tags: ["health-factor", "monitoring", "x402"], d: "Tracks loan health factors and acts before liquidation thresholds." },
+  { n: "YieldScout-7",  c: "DeFi & Yield",        h: 78, ava: "🌾", tags: ["yield", "OASF", "x402"],         d: "Conservative vault strategies: blue-chip pools only, strict max-drawdown mandate." },
+  { n: "AlphaFeed-4",   c: "Data & Analytics",    h: 77, ava: "📡", tags: ["API", "data", "monitoring"],     d: "On-chain alpha signals and anomaly-detection feeds for trading desks." },
+  { n: "DeployDroid-6", c: "Infra & DevOps",      h: 75, ava: "🤖", tags: ["CI/CD", "web", "MCP"],           d: "Contract CI/CD: deploy, verify, monitor — with rollback authority." },
+  { n: "GridRunner-9",  c: "Trading & Execution", h: 74, ava: "📐", tags: ["grid", "x402", "A2A"],           d: "Automated grid strategies inside hard ranges; range breach auto-halts." },
+  { n: "VaultGuard-2",  c: "DeFi & Yield",        h: 73, ava: "🔐", tags: ["risk", "health-factor", "monitoring"], d: "Position rebalancing under on-chain risk limits." },
+  { n: "CommunityBot-8",c: "Social & Support",    h: 69, ava: "💬", tags: ["web", "A2A", "social"],          d: "Multilingual community ops and support with escalation policies." },
+  { n: "FlowRunner-12", c: "Trading & Execution", h: 66, ava: "🌀", tags: ["OTC", "grid", "x402"],           d: "OTC and block-trade execution with hard slippage mandates." },
+  { n: "GameActor-21",  c: "Gaming & NFT",        h: 62, ava: "🎮", tags: ["gaming", "NFT"],                 d: "Autonomous in-game economy actor with bounded bankroll." },
+  { n: "DataMiner-9",   c: "Data & Analytics",    h: 58, ava: "⛏️", tags: ["data", "API"],                   d: "Raw on-chain analytics; unverified data provenance — gate review." },
+  { n: "SwapBot-44",    c: "Trading & Execution", h: 41, ava: "⚡", tags: ["DEX", "grid", "x402"],           d: "Aggressive DEX router with prior mandate breaches — gate failed." },
 ];
 const CATS = ["ALL", "DeFi & Yield", "Trading & Execution", "Payments", "Data & Analytics", "Security & Risk", "Social & Support", "Infra & DevOps", "Gaming & NFT"];
-let curCat = "ALL";
-let curSort = "fit";
-let curQ = "";
+const REFS = ["monitoring", "grid", "health-factor", "yield"];
+let curCat = "ALL", curSort = "fit", curQ = "", curArch = "";
 const catsEl = document.getElementById("cats");
+const refsEl = document.getElementById("refs");
 const marketEl = document.getElementById("market");
 
 const pillars = h => { const q = Math.floor(h / 4); return [q, q, q, h - 3 * q]; };
@@ -312,6 +318,19 @@ CATS.forEach(c => {
   catsEl.appendChild(b);
 });
 
+refsEl.innerHTML = '<span class="mhead" style="margin:0 6px 0 0">REFERENCE FOUR:</span>';
+REFS.forEach(r => {
+  const b = document.createElement("button");
+  b.className = "chip";
+  b.textContent = r;
+  b.onclick = () => {
+    curArch = curArch === r ? "" : r;
+    [...refsEl.querySelectorAll(".chip")].forEach(el => el.classList.toggle("on", el.textContent === curArch));
+    renderMarket();
+  };
+  refsEl.appendChild(b);
+});
+
 function fleetHire() {
   const top = AGENTS.map((a, i) => ({ ...a, i }))
     .filter(a => a.h >= 60 && (curCat === "ALL" || a.c === curCat))
@@ -327,10 +346,72 @@ fb.style.borderColor = "var(--amber)";
 fb.onclick = fleetHire;
 catsEl.appendChild(fb);
 
+function renderTray() {
+  const t = document.getElementById("tray");
+  if (!compare.length) { t.style.display = "none"; t.innerHTML = ""; return; }
+  t.style.display = "block";
+  t.innerHTML = `⚖ COMPARE (${compare.length}/3): ` + compare.map(i => AGENTS[i].n).join(" × ") +
+    ` &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="openCompare()">OPEN COMPARISON</span>` +
+    (compare.length > 1 ? ` <span class="chip" style="color:var(--amber);border-color:var(--amber)" onclick="hireAll()">⭐ HIRE ALL SELECTED</span>` : "") +
+    ` <span class="chip" onclick="compare=[];renderTray()">CLEAR</span>`;
+}
+function toggleCompare(i) {
+  const at = compare.indexOf(i);
+  if (at >= 0) compare.splice(at, 1);
+  else if (compare.length < 3) compare.push(i);
+  renderTray();
+}
+function hireAll() { compare.forEach((i, k) => setTimeout(() => hire(i), 500 * (k + 1))); }
+
+function openCompare() {
+  if (compare.length < 2) return;
+  const list = compare.map(i => ({ ...AGENTS[i] }));
+  const row = (label, fn) => `<tr><td>${label}</td>${list.map(a => `<td>${fn(a)}</td>`).join("")}</tr>`;
+  const safest = [...list].sort((a, b) => (histOf(a).slashed - histOf(b).slashed) || (b.h - a.h))[0];
+  const value = ([...list].filter(a => a.h >= 60).sort((a, b) => priceOf(a) - priceOf(b))[0]) || list[0];
+  const ready = [...list].sort((a, b) => idleOf(b) - idleOf(a))[0];
+  document.getElementById("mbody").innerHTML = `
+    <div style="font-size:16px;color:#fff;font-weight:bold">⚖ SIDE-BY-SIDE COMPARISON</div>
+    <table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:10px">
+      <tr><td></td>${list.map(a => `<td style="color:#fff;font-weight:bold">${a.ava} ${a.n}</td>`).join("")}</tr>
+      ${row("Grade", a => gradeOf(a.h)[1])}
+      ${row("HUMI", a => a.h + "/100")}
+      ${row("History pillar", a => pillars(a.h)[0] + "/25")}
+      ${row("Information pillar", a => pillars(a.h)[1] + "/25")}
+      ${row("Measure pillar", a => pillars(a.h)[2] + "/25")}
+      ${row("Usage pillar", a => pillars(a.h)[3] + "/25")}
+      ${row("Price / task", a => priceOf(a).toFixed(4) + " BNB")}
+      ${row("Clearing fee 1%", a => (priceOf(a) * 0.01).toFixed(6) + " BNB")}
+      ${row("Tasks settled", a => histOf(a).done)}
+      ${row("Times slashed", a => histOf(a).slashed)}
+      ${row("Slash rate", a => Math.round(slashRateOf(a) * 100) + "%")}
+      ${row("Capabilities", a => a.tags.join(", "))}
+      ${row("Gate / mandate", a => a.h >= 60 ? "✔ eligible" : "✕ blocked")}
+    </table>
+    <div style="margin-top:10px;font-size:11px;color:var(--amber)">VERDICT — 🛡 Safest: ${safest.n} • 💰 Best value: ${value.n} • ⚡ Ready now: ${ready.n}</div>
+    <button style="margin-top:12px;width:100%;padding:8px;background:#052e16;color:var(--green);border:1px solid var(--green);border-radius:6px;cursor:pointer;font-family:inherit" onclick="hireAll();closeModal()">⭐ HIRE ALL SELECTED</button>`;
+  document.getElementById("modal").style.display = "flex";
+}
+
+function openList() {
+  document.getElementById("mbody").innerHTML = `
+    <div style="font-size:16px;color:#fff;font-weight:bold">+ LIST YOUR AGENT — ERC-8004 REQUIREMENTS</div>
+    <ul style="margin:12px 0 0 16px;font-size:12px;line-height:1.9">
+      <li>Mint ERC-8004 identity (ERC-721) with capability metadata</li>
+      <li>Declare services & endpoints (MCP / A2A / x402)</li>
+      <li>Stake ≥ 0.001 BNB skin-in-the-game</li>
+      <li>Consent to HUMI scoring & on-chain enforcement</li>
+      <li>Pass reputation gate (HUMI ≥ 60)</li>
+    </ul>
+    <p style="font-size:11px;color:var(--dim);margin-top:8px">Live registry onboarding ships post-hackathon with the GSA API. Applications queue today.</p>
+    <button style="margin-top:12px;width:100%;padding:8px;background:#082f49;color:var(--blue);border:1px solid var(--blue);border-radius:6px;cursor:pointer;font-family:inherit" onclick="addRow('ASSIGN','[LISTING] agent application queued — ERC-8004 identity verification pending (demo)',Date.now(),0,false,true);closeModal()">REQUEST LISTING</button>`;
+  document.getElementById("modal").style.display = "flex";
+}
 function renderMarket() {
   marketEl.innerHTML = "";
   AGENTS.map((a, i) => ({ ...a, i }))
     .filter(a => curCat === "ALL" || a.c === curCat)
+    .filter(a => !curArch || a.tags.includes(curArch))
     .filter(a => !curQ || a.n.toLowerCase().includes(curQ) || a.c.toLowerCase().includes(curQ) || a.tags.some(t => t.toLowerCase().includes(curQ)))
     .filter(a => curSort !== "zero" || histOf(a).slashed === 0)
     .sort(SORTS[curSort] || SORTS.fit)
@@ -343,7 +424,10 @@ function renderMarket() {
         <div class="tags">${a.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
         <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
         <div class="st" id="st${a.i}">idle</div>
-        <button ${a.h >= 60 ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>`;
+        <div style="display:flex;gap:6px">
+          <button style="flex:2" ${a.h >= 60 ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>
+          <button style="flex:1" onclick="toggleCompare(${a.i})">⚖</button>
+        </div>`;
       marketEl.appendChild(d);
     });
 }
@@ -357,6 +441,7 @@ function openProfile(i) {
   document.getElementById("mbody").innerHTML = `
     <div style="font-size:16px;color:#fff;font-weight:bold">${a.ava} ${a.n} <span class="grade ${gc}">${gl}</span> <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span></div>
     <div style="color:var(--dim);font-size:11px;margin-top:2px">${a.c} • ${a.tags.join(" • ")}</div>
+    <div style="color:var(--blue);font-size:11px;margin-top:6px">settlement rail: x402 • escrow & enforcement: AgentNexusVault</div>
     <p style="margin:10px 0;font-size:12px">${a.d}</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px">
       <div class="card amber"><div class="k">PRICE / TASK</div><div class="v" style="font-size:15px">${priceOf(a).toFixed(4)} BNB</div></div>
@@ -411,6 +496,7 @@ setInterval(() => {
   const states = ["scanning mempool…", "bidding on open task…", "staking & executing…", "idle"];
   st.textContent = states[Math.floor(Math.random() * states.length)];
 }, 4000);
+
 /* ---------- COMPLIANCE EXPORT ---------- */
 function exportAudit() {
   const rows = [...feed.querySelectorAll(".row")].reverse().map(r => r.textContent.trim());
@@ -418,7 +504,7 @@ function exportAudit() {
   const html = `<html><head><title>AgentNexus Compliance Report</title>
   <style>body{font-family:monospace;padding:24px;color:#111}h1{font-size:18px}li{margin:4px 0;font-size:12px}</style></head><body>
   <h1>AGENTNEXUS — COMPLIANCE AUDIT TRAIL</h1>
-  <p>Generated: ${new Date().toLocaleString()}<br>Vault: ${ADDRESS}<br>Client wallet: ${clientAddr || "demo session"}<br>Hired agent: ${hired ? hired.n + " (HUMI " + hired.h + ")" + (insured ? " — INSURED" : "") : "none this session"}<br>Mandate: cap ${document.getElementById("mExp").value} BNB/task • insurance ${document.getElementById("mIns").checked ? "required" : "optional"} • dual approval ${document.getElementById("mDual").checked ? "on" : "off"} • forbidden: ${document.getElementById("mForbid").textContent}</p>
+  <p>Generated: ${new Date().toLocaleString()}<br>Vault: ${ADDRESS}<br>Settlement rail: x402<br>Client wallet: ${clientAddr || "demo session"}<br>Hired agent: ${hired ? hired.n + " (HUMI " + hired.h + ")" + (insured ? " — INSURED" : "") : "none this session"}<br>Mandate: cap ${document.getElementById("mExp").value} BNB/task • insurance ${document.getElementById("mIns").checked ? "required" : "optional"} • dual approval ${document.getElementById("mDual").checked ? "on" : "off"} • forbidden: ${document.getElementById("mForbid").textContent}</p>
   <h3>EVENT LOG</h3><ul>${rows.map(r => "<li>" + r + "</li>").join("")}</ul>
   <p>Every event above is anchored to BNB Smart Chain Testnet.<br>Verify independently: https://testnet.bscscan.com/address/${ADDRESS}</p>
   </body></html>`;
