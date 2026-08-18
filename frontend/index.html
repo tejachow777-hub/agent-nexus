@@ -31,21 +31,19 @@
   .card:hover .tip { display:block; }
   .mhead { color:#94a3b8; font-size:11px; letter-spacing:1px; margin-bottom:8px; }
   .simlabel { color:var(--purple); font-size:10px; margin-left:8px; }
-  #q { width:320px; background:#0d1420; border:1px solid #1f2937; color:var(--text); border-radius:999px; padding:8px 16px; font-family:inherit; font-size:12px; }
-  #q::placeholder { color:#ffffff; opacity:1; }
+  #q { width:230px; background:#0d1420; border:1px solid #1f2937; color:var(--text); border-radius:999px; padding:6px 14px; font-family:inherit; font-size:11px; }
   #q:focus { outline:1px solid var(--green); }
   #cats, #refs { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:10px; align-items:center; }
   #cats { border-top:1px solid #1f2937; padding-top:10px; }
+  #refs { border-bottom:1px solid #1f2937; padding-bottom:12px; }
   #market { display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px; margin-bottom:42px; }
-  .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; display:flex; flex-direction:column; }
-  .agent.blocked { border:1px solid var(--red); background:repeating-linear-gradient(45deg, rgba(239,68,68,.08) 0 6px, transparent 6px 12px), var(--panel); opacity:.85; }
-  .agent.shield { outline:2px solid var(--red); animation:glowRed 1s 6; }
-  .agent.sel { outline:2px solid #00f0ff; }
+  .agent { background:var(--panel); border:1px solid #1f2937; border-radius:8px; padding:10px; font-size:11px; }
+  .agent.blocked { border:1px solid var(--red); background:repeating-linear-gradient(45deg, rgba(239,68,68,.08) 0 6px, transparent 6px 12px), var(--panel); }
   .agent .n { color:#fff; font-size:12px; font-weight:bold; cursor:pointer; }
   .agent .n:hover { color:var(--blue); }
   .agent .s { color:var(--dim); margin:4px 0; }
   .ava { display:inline-flex; width:24px; height:24px; align-items:center; justify-content:center; background:#0d1420; border:1px solid #1f2937; border-radius:6px; font-size:13px; flex:none; }
-  .grade { margin-left:auto; padding:1px 7px; border-radius:4px; font-weight:bold; font-size:10px; border:1px solid currentColor; }
+  .grade { margin-left:auto; padding:1px 7px; border-radius:4px; font-weight:bold; font-size:10px; }
   .gS { background:#3a2b00; color:var(--amber); } .gA { background:#052e16; color:var(--green); } .gB { background:#082f49; color:var(--blue); } .gC { background:#450a0a; color:var(--red); }
   .tags { display:flex; flex-wrap:wrap; gap:4px; margin:4px 0; }
   .tag { background:#0d1420; border:1px solid #1f2937; color:var(--dim); border-radius:4px; padding:1px 6px; font-size:9px; }
@@ -104,10 +102,10 @@
   <div class="card purple"><div class="k">PROTOCOL FEES (1%)</div><div class="v" id="sFees">0</div><div class="tip" id="tipFees"></div></div>
   <div class="card green"><div class="k">SETTLED</div><div class="v" id="sSettled">0</div><div class="tip" id="tipSettled"></div></div>
   <div class="card red"><div class="k">ROGUES SLASHED</div><div class="v" id="sSlashed">0</div><div class="tip" id="tipSlash"></div></div>
-  <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div><div id="rateTrend" style="font-size:9px;margin-top:2px;color:var(--dim)">24h: —</div><div id="rateTrendline" style="font-size:9px;letter-spacing:1px;color:var(--dim);margin-top:4px;height:12px;line-height:12px">▁▁▁▁▁▁▁▁▁▁▁▁</div><div id="rateReasons" style="margin-top:6px;height:6px;border-radius:3px;overflow:hidden"></div><div class="tip" id="tipRate"></div></div>
+  <div class="card red"><div class="k">SLASH RATE</div><div class="v" id="sRate">0%</div><div id="rateTrend" style="font-size:9px;margin-top:2px;color:var(--dim)">24h: —</div><div id="rateSpark" style="font-size:9px;letter-spacing:1px;color:var(--red)">▁▁▁▁▁▁▁▁▁</div><div id="rateReasons" style="font-size:8px;color:var(--dim);margin-top:2px">reasons: awaiting sample</div><div class="tip" id="tipRate"></div></div>
 </div>
 
-<details><summary style="cursor:pointer;color:#94a3b8;font-size:11px;letter-spacing:1px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:10px"><span>🏦 ENTERPRISE MANDATE — ACTIVE POLICY: cap 0.01 BNB/task • insurance ✔ • dual approval ✔ • forbidden: Gaming &amp; NFT</span><span style="color:var(--green);font-size:10px">▼ [CONFIGURE]</span></summary>
+<details><summary style="cursor:pointer;color:#94a3b8;font-size:11px;letter-spacing:1px;margin-bottom:10px">🏦 ENTERPRISE MANDATE — ACTIVE POLICY: cap 0.01 BNB/task • insurance ✔ • dual approval ✔ • forbidden: Gaming &amp; NFT <span class="simlabel">click to configure</span></summary>
 <div id="mandate">
   <div class="card"><div class="k">MAX EXPOSURE / TASK</div><div class="v" style="font-size:13px"><input id="mExp" type="number" value="0.01" step="0.001" /> BNB</div></div>
   <div class="card"><div class="k">REQUIRE INSURANCE</div><div class="v"><input type="checkbox" id="mIns" checked /></div></div>
@@ -119,44 +117,44 @@
 
 <div class="mhead">AGENT MARKET — 200,000+ ERC-8004 agents on BNB • found → compared → hired → enforced &nbsp;<span class="chip" style="color:var(--blue);border-color:var(--blue)" onclick="openList()">+ LIST YOUR AGENT</span><span class="simlabel">live registry + GSA scores post-hackathon</span></div>
 <div id="cats"></div>
+<div id="refs"></div>
+<div style="margin:0 0 10px"><span class="mhead" style="display:inline">SORT BY:</span>
+<select id="sortSel" style="background:#0d1420;color:var(--text);border:1px solid #1f2937;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:11px" onchange="curSort=this.value;renderMarket()">
+  <optgroup label="Institutional & Trust">
+    <option value="fit">⭐ Institutional Fit (smart)</option>
+    <option value="humi">🛡️ Highest HUMI</option>
+    <option value="zero">🌟 Curated: Zero Slashes</option>
+    <option value="settled">📈 Best Settlement History</option>
+    <option value="slashrate">📉 Lowest Slash Rate</option>
+  </optgroup>
+  <optgroup label="Pricing & Economics">
+    <option value="priceAsc">💰 Price: Low → High</option>
+    <option value="priceDesc">💎 Capital Tier: High → Low</option>
+    <option value="feeAsc">🏷️ Clearing Fee: Lowest First</option>
+  </optgroup>
+  <optgroup label="Operational Status">
+    <option value="idle">⚡ Idle / Ready First</option>
+    <option value="gate">🛡️ Gate-Approved First</option>
+    <option value="a2a">🤝 A2A Revenue (mesh earners)</option>
+  </optgroup>
+  <optgroup label="HUMI Pillars">
+    <option value="pH">📜 History Pillar</option>
+    <option value="pI">📡 Info & Audit Pillar</option>
+    <option value="pM">📐 Measure Pillar</option>
+    <option value="pU">📊 Usage Pillar</option>
+  </optgroup>
+</select></div>
 <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
   <div id="pager" style="display:flex;gap:6px;align-items:center;font-size:11px;flex-wrap:wrap"></div>
-  <span class="mhead" style="margin:0 0 0 auto">SORT:</span>
-  <select id="sortSel" style="background:#0d1420;color:var(--text);border:1px solid #1f2937;border-radius:6px;padding:4px 8px;font-family:inherit;font-size:11px" onchange="curSort=this.value;renderMarket()">
-    <optgroup label="Institutional & Trust">
-      <option value="fit">⭐ Institutional Fit (smart)</option>
-      <option value="humi">🛡️ Highest HUMI</option>
-      <option value="zero">🌟 Curated: Zero Slashes</option>
-      <option value="settled">📈 Best Settlement History</option>
-      <option value="slashrate">📉 Lowest Slash Rate</option>
-    </optgroup>
-    <optgroup label="Pricing & Economics">
-      <option value="priceAsc">💰 Price: Low → High</option>
-      <option value="priceDesc">💎 Capital Tier: High → Low</option>
-      <option value="feeAsc">🏷️ Clearing Fee: Lowest First</option>
-    </optgroup>
-    <optgroup label="Operational Status">
-      <option value="idle">⚡ Idle / Ready First</option>
-      <option value="gate">🛡️ Gate-Approved First</option>
-      <option value="a2a">🤝 A2A Revenue (mesh earners)</option>
-    </optgroup>
-    <optgroup label="HUMI Pillars">
-      <option value="pH">📜 History Pillar</option>
-      <option value="pI">📡 Info & Audit Pillar</option>
-      <option value="pM">📐 Measure Pillar</option>
-      <option value="pU">📊 Usage Pillar</option>
-    </optgroup>
-  </select>
-  <input id="q" placeholder="🔍 search 200,000+ agents…" oninput="curQ=this.value.toLowerCase();renderMarket()" />
+  <input id="q" placeholder="🔍 search 200,000+ agents…" oninput="curQ=this.value.toLowerCase();renderMarket()" style="margin-left:auto" />
 </div>
-<div id="refs"></div>
 <div id="market"></div>
 <div id="fcmp" style="position:fixed;right:22px;bottom:22px;z-index:60;display:none;text-align:right">
-  <div id="fpanel" style="display:none;background:#0d1420;border:1px solid var(--amber);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;max-width:260px"></div>
+  <div id="fpanel" style="display:none;background:#0d1420;border:1px solid var(--amber);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:11px;max-width:240px"></div>
   <button onclick="toggleFPanel()" style="width:56px;height:56px;border-radius:50%;background:#0d1420;border:2px solid var(--amber);color:var(--amber);font-size:22px;cursor:pointer;position:relative;box-shadow:0 0 14px rgba(245,158,11,.35)">⚖<span id="fbadge" style="position:absolute;top:-8px;right:-8px;background:var(--amber);color:#000;border-radius:999px;padding:2px 7px;font-size:10px;font-weight:bold">0/3</span></button>
 </div>
 
-<div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="exportAudit()">⬇ AUDIT (PDF)</span> &nbsp;<span class="chip" style="color:var(--red);border-color:var(--red)" onclick="fireDrill()">⚡ RUN FIRE DRILL</span> &nbsp;<span class="chip" style="color:var(--blue);border-color:var(--blue)" onclick="exportCSV()">⬇ CSV</span> &nbsp;<span class="chip" style="color:var(--blue);border-color:var(--blue)" onclick="exportJSON()">⬇ JSON-LD</span> &nbsp;<span class="chip" id="whk" style="cursor:pointer" onclick="toggleHook()">🔔 WEBHOOK: ON</span></div>
+<div class="mhead">LIVE NOTIFICATIONS — every escrow, settlement and slash in real time &nbsp;<span class="chip" style="color:var(--green);border-color:var(--green)" onclick="exportAudit()">⬇ AUDIT (PDF)</span> &nbsp;<span class="chip" style="color:var(--red);border-color:var(--red)" onclick="fireDrill()">⚡ RUN FIRE DRILL</span></div>
 <div id="ffilters" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap"></div>
 <div id="feed"></div>
 
@@ -250,8 +248,7 @@ function addRow(type, text, ts = Date.now(), value = 0, save = true, mine = fals
   div.className = "row " + type + (mine ? " mine" : "");
   const tag = type === "FIREWALL" ? '<span class="killtag">⚠ KILL-SWITCH</span>' : "";
   const linked = text.replace(/#(\d+)/g, '<a href="https://testnet.bscscan.com/address/' + ADDRESS + '" target="_blank" style="color:var(--blue)">#$1</a>');
-  const receipt = type === "COMPLETE" && mm ? ` <a href="#" onclick="exportReceipt(${Number(mm[1])});return false" style="color:var(--blue);font-size:10px">⬇ receipt</a>` : "";
-  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${tag}${linked}${receipt}`;
+  div.innerHTML = `<span class="t">${new Date(ts).toLocaleTimeString()}</span><span class="badge">${type}</span>${tag}${linked}`;
   if (typeof feedFilter !== "undefined" && feedFilter && !div.classList.contains(feedFilter)) div.style.display = "none";
   feed.prepend(div);
   if (type === "FIREWALL") {
@@ -343,7 +340,7 @@ function genCat(cat, seed){
 const CURATED = AGENTS.slice();
 function renderPager(){
   document.getElementById("pager").innerHTML =
-    `<span style="color:var(--text)">REGISTRY PAGE ${page.toLocaleString()} / ${TOTAL_PAGES.toLocaleString()} • showing ${AGENTS.length} of 200,000+</span> <span class="chip" onclick="gotoPage(${page-1})">◀</span> <span class="chip" onclick="gotoPage(${page+1})">▶</span> <span class="chip" style="color:var(--purple);border-color:var(--purple)" onclick="surfaceTop()">🎲 SURFACE TOP PERFORMERS</span>`;
+    `<span style="color:var(--text)">REGISTRY PAGE ${page.toLocaleString()} / ${TOTAL_PAGES.toLocaleString()} • showing ${AGENTS.length} of 200,000+ • <span style="color:var(--dim)">index: preview • enforcement: LIVE on-chain</span></span> <span class="chip" onclick="gotoPage(${page-1})">◀</span> <span class="chip" onclick="gotoPage(${page+1})">▶</span> <span class="chip" style="color:var(--purple);border-color:var(--purple)" onclick="surfaceTop()">🎲 SURFACE TOP PERFORMERS</span>`;
 }
 function gotoPage(p){
   page = Math.min(TOTAL_PAGES, Math.max(1, p));
@@ -407,6 +404,19 @@ CATS.forEach(c => {
   catsEl.appendChild(b);
 });
 
+refsEl.innerHTML = '<span class="mhead" style="margin:0 6px 0 0">PROTOCOL PRESETS (REF-4):</span>';
+REFS.forEach(r => {
+  const b = document.createElement("button");
+  b.className = "chip";
+  b.textContent = r;
+  b.onclick = () => {
+    curArch = curArch === r ? "" : r;
+    [...refsEl.querySelectorAll(".chip")].forEach(el => el.classList.toggle("on", el.textContent === curArch));
+    renderMarket();
+  };
+  refsEl.appendChild(b);
+});
+
 function fleetHire() {
   const top = AGENTS.map((a, i) => ({ ...a, i }))
     .filter(a => a.h >= 60 && (curCat === "ALL" || a.c === curCat))
@@ -422,56 +432,25 @@ fb.style.borderColor = "var(--blue)";
 fb.onclick = fleetHire;
 catsEl.appendChild(fb);
 
-const rm = document.createElement("button");
-rm.className = "chip";
-rm.textContent = "🗺 24h RISK MAP";
-rm.style.color = "var(--red)";
-rm.style.borderColor = "var(--red)";
-rm.onclick = openRiskMap;
-catsEl.appendChild(rm);
-
-refsEl.innerHTML = '<span class="mhead" style="margin:0 6px 0 0">PROTOCOL PRESETS (REF-4):</span>';
-REFS.forEach(r => {
-  const b = document.createElement("button");
-  b.className = "chip";
-  b.textContent = r;
-  b.onclick = () => {
-    curArch = curArch === r ? "" : r;
-    [...refsEl.querySelectorAll(".chip")].forEach(el => el.classList.toggle("on", el.textContent === curArch));
-    renderMarket();
-  };
-  refsEl.appendChild(b);
-});
-
 function renderTray() {
   const fab = document.getElementById("fcmp");
   if (!compare.length) { fab.style.display = "none"; return; }
   fab.style.display = "block";
   document.getElementById("fbadge").textContent = compare.length + "/3";
-  const sel = compare.map(i => AGENTS[i]);
-  const totFee = sel.reduce((s, a) => s + priceOf(a) * 0.01, 0);
-  const totBond = sel.reduce((s, a) => s + a.h / 10, 0);
-  const totEscrow = sel.reduce((s, a) => s + priceOf(a), 0);
-  const worstSLA = sel.length ? Math.max(...sel.map(a => 1200 - a.h * 8)) : 0;
   document.getElementById("fpanel").innerHTML =
     `<div style="color:var(--amber);font-weight:bold;margin-bottom:4px">⚖ COMPARE ${compare.length}/3</div>` +
     compare.map(i => `<div style="margin:2px 0">${AGENTS[i].ava} ${AGENTS[i].n} <span style="cursor:pointer;color:var(--red)" onclick="toggleCompare(${i})">✕</span></div>`).join("") +
-    `<div style="color:var(--blue);font-size:9px;margin:4px 0 2px">${sel.map(a => a.n).join(" → ")}</div>
-    <div style="margin:0 0 2px;color:var(--dim);font-size:9px">composite fee ${totFee.toFixed(6)} • joint escrow ${totEscrow.toFixed(4)} BNB • worst SLA ${worstSLA}ms • bonded ${totBond.toFixed(1)}</div>
-    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+    `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
       <span class="chip" style="color:var(--green);border-color:var(--green)" onclick="openCompare()">OPEN</span>
-      ${compare.length > 1 ? `<span class="chip" style="color:var(--amber);border-color:var(--amber)" onclick="hireAll()">HIRE FLEET (batched)</span>` : ""}
+      ${compare.length > 1 ? `<span class="chip" style="color:var(--amber);border-color:var(--amber)" onclick="hireAll()">HIRE ALL</span>` : ""}
       <span class="chip" onclick="compare=[];renderTray()">CLEAR</span>
     </div>`;
-}
-function paintCompare() {
-  [...marketEl.querySelectorAll(".agent")].forEach(c => c.classList.toggle("sel", compare.includes(Number(c.dataset.i))));
 }
 function toggleCompare(i) {
   const at = compare.indexOf(i);
   if (at >= 0) compare.splice(at, 1);
   else if (compare.length < 3) compare.push(i);
-  renderTray(); paintCompare();
+  renderTray();
 }
 function toggleFPanel() {
   const p = document.getElementById("fpanel");
@@ -546,12 +525,10 @@ function openExec(a) {
   const lines = a.tags.includes("health-factor") ? EXEC["health-factor"] : (EXEC[a.c] || EXEC["default"]);
   document.getElementById("mbody").innerHTML = `
     <div style="font-size:16px;color:#fff;font-weight:bold">${a.ava} ${a.n} — LIVE EXECUTION <span class="simlabel">telemetry preview</span></div>
-    <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">${["ESCROW", "SIMULATION", "POLICY CHECK", "SETTLEMENT"].map((s, i) => `<span id="stg${i}" class="stbadge stb-dim">${i + 1}. ${s}</span>`).join("")}</div>
     <div id="exec"></div>`;
   document.getElementById("modal").style.display = "flex";
   const box = document.getElementById("exec");
   box.innerHTML = "";
-  ["stg0", "stg1", "stg2", "stg3"].forEach((id, i) => setTimeout(() => { const el = document.getElementById(id); if (el) el.className = "stbadge stb-green"; }, 450 * (i + 1)));
   lines.forEach((l, i) => setTimeout(() => { box.innerHTML += l + "\n"; box.scrollTop = box.scrollHeight; }, 450 * (i + 1)));
 }
 
@@ -584,24 +561,19 @@ function renderMarket() {
       const blocked = forbid.includes(a.c);
       const d = document.createElement("div");
       d.className = "agent" + (blocked ? " blocked" : "");
-      d.dataset.i = a.i;
-      if (blocked) d.title = "Violates mandate: " + a.c + " blocked by compliance";
       d.innerHTML = `<div style="display:flex;align-items:center;gap:6px"><span class="ava">${a.ava}</span><div class="n" onclick="openProfile(${a.i})">${a.n} <span class="pwrap">ⓘ<span class="ptip">History ${P[0]}/25 • Info ${P[1]}/25<br>Measure ${P[2]}/25 • Usage ${P[3]}/25<br>HUMI ${a.h}/100</span></span></div><span class="grade ${gc}">${gl}</span></div>
         <div class="s">${a.c}</div>
         <div class="tags">${a.tags.map(t => `<span class="tag">${t}</span>`).join("")}</div>
-        ${a.tags.includes("A2A") ? `<div style="color:var(--purple);font-size:9px;margin-top:2px">🤝 ${a2aOf(a).n} delegations • ${a2aOf(a).acc}% acc • ${a2aOf(a).rev} BNB earned</div>` : `<div style="color:#374151;font-size:9px;margin-top:2px">— no delegations yet —</div>`}
+        ${a.tags.includes("A2A") ? `<div style="color:var(--purple);font-size:9px;margin-top:2px">🤝 ${a2aOf(a).n} delegations • ${a2aOf(a).acc}% acc • ${a2aOf(a).rev} BNB earned</div>` : ""}
         <span class="humi ${a.h >= 60 ? "ok" : "bad"}">HUMI ${a.h}</span>
-        <div style="color:var(--amber);font-size:9px;margin-top:2px">⚡ Bonded: ${(a.h / 10).toFixed(1)} BNB • Insured: ${(a.h / 40).toFixed(1)} BNB</div>
-        <div style="color:var(--dim);font-size:9px">⏱ ${1200 - a.h * 8}ms fill • slip ${(0.5 - a.h / 200).toFixed(2)}% • 🛡 ${histOf(a).done - histOf(a).slashed} clean</div>
         ${blocked ? '<span class="lockbadge">[BLOCKED BY POLICY]</span>' : (a.h < 60 ? '<span class="lockbadge" style="background:#111827;color:var(--dim);border-color:#1f2937">[GATE ✕ HUMI &lt; 60]</span>' : "")}
         <div class="st" id="st${a.i}"><span class="stbadge stb-dim">idle</span></div>
-        <div style="display:flex;gap:6px;margin-top:auto">
+        <div style="display:flex;gap:6px">
           <button style="flex:2" ${a.h >= 60 && !blocked ? "" : "disabled"} onclick="hire(${a.i})">${a.h >= 60 ? "HIRE" : "GATE ✕"}</button>
           <button style="flex:1" onclick="toggleCompare(${a.i})">⚖</button>
         </div>`;
       marketEl.appendChild(d);
     });
-  paintCompare();
 }
 gotoPage(1);
 
@@ -629,7 +601,6 @@ function openProfile(i) {
       ▸ task #${(a.h * 7) % 900 + 100} settled in ${1200 - a.h * 8}ms • proof verified ✔<br>
       ▸ task #${(a.h * 11) % 900 + 50} settled in ${1400 - a.h * 9}ms • proof verified ✔<br>
       ▸ counterparties verified: 0x3f82…11ac • 0x91bb…04d7<br>
-      ▸ bytecode keccak: 0x${(a.h * 2654435761 >>> 0).toString(16)}${(a.h * 40503 >>> 0).toString(16)}… • <a href="https://testnet.bscscan.com/address/${ADDRESS}" target="_blank" style="color:var(--blue)">verify on BscScan</a><br>
       ▸ slashing history: ${H.slashed ? H.slashed + " event(s) — stake recovered for clients" : "none — clean record"}
     </div>
     <label style="display:block;margin-top:12px;font-size:12px;color:var(--amber)"><input type="checkbox" id="ins" /> Add INSURANCE POOL coverage (+0.5% premium — extra refund layer on slash)</label>
@@ -694,40 +665,6 @@ setInterval(() => {
   addRow("A2A", `[A2A] ${boss.n} → ${sub.n}: ${A2A_JOBS[Math.floor(Math.random() * A2A_JOBS.length)]} • 0.0002 BNB micro-fee (x402) • outcome: ${A2A_WINS[Math.floor(Math.random() * A2A_WINS.length)]} • accuracy ${a2aOf(sub).acc}%`, Date.now(), 0, false);
 }, 12000);
 
-function shieldCard(name, payload) {
-  [...marketEl.querySelectorAll(".agent")].forEach(c => {
-    if ((c.querySelector(".n")?.textContent || "").includes(name)) {
-      c.classList.add("shield");
-      const st = c.querySelector(".st");
-      if (st && payload) st.innerHTML = `<span class="stbadge stb-red">🛡 BLOCKED: ${payload}</span>`;
-      setTimeout(() => c.classList.remove("shield"), 6000);
-    }
-  });
-}
-function exportReceipt(tid) {
-  const att = { "@context": "https://schema.org", "@type": "SettlementAttestation", vault: ADDRESS, task: tid, policy: { exposureCap: document.getElementById("mExp").value + " BNB", insurance: document.getElementById("mIns").checked, dualApproval: document.getElementById("mDual").checked, forbidden: document.getElementById("mForbid").textContent }, checks: ["exposure within cap ✔", "counterparty whitelist ✔", "dual signature ✔", "stake collateral verified ✔"], settled: new Date().toISOString(), attestation: "0x" + ((tid * 2654435761) >>> 0).toString(16) + "…(preview)" };
-  const a = document.createElement("a");
-  a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(att, null, 2));
-  a.download = `agentnexus_attestation_task${tid}.json`;
-  a.click();
-}
-function openRiskMap() {
-  const counts = {};
-  CATS.slice(1).forEach(c => counts[c] = 0);
-  Object.entries(rogueCounts).forEach(([n, c]) => {
-    const ag = AGENTS.find(a => a.n === n) || CURATED.find(a => a.n === n);
-    if (ag) counts[ag.c] = (counts[ag.c] || 0) + c;
-  });
-  const max = Math.max(1, ...Object.values(counts));
-  document.getElementById("mbody").innerHTML = `
-    <div style="font-size:16px;color:#fff;font-weight:bold">🗺 24h SECTOR RISK MAP <span class="simlabel">witnessed anomalies</span></div>
-    <div style="margin-top:12px;display:grid;gap:8px">
-      ${Object.entries(counts).map(([c, v]) => `<div style="font-size:11px">${c} <span style="float:right;color:var(--red)">${v}</span><div style="height:8px;background:#1f2937;border-radius:4px;margin-top:3px;overflow:hidden"><div style="width:${(v / max) * 100}%;height:100%;background:${v === 0 ? "#374151" : (v >= max * 0.7 ? "#ef4444" : "#f59e0b")}"></div></div></div>`).join("")}
-    </div>
-    <p style="font-size:10px;color:var(--dim);margin-top:10px">Heat = witnessed slash events per sector this session. Cold sectors = trusted verticals.</p>`;
-  document.getElementById("modal").style.display = "flex";
-}
-
 function fireDrill() {
   const victim = AGENTS[Math.floor(Math.random() * AGENTS.length)];
   const tid = 9000 + Math.floor(Math.random() * 999);
@@ -735,7 +672,6 @@ function fireDrill() {
   addRow("ASSIGN", "[DRILL] slash webhook fired → treasury Slack + cso@corp (drill mode — on-chain stats untouched)", Date.now(), 0, false, true);
   const st = document.getElementById("st" + AGENTS.indexOf(victim));
   if (st) st.innerHTML = '<span class="stbadge stb-red">DRILL: slashed & quarantined ✖</span>';
-  shieldCard(victim.n, "counterparty probe");
   document.getElementById("mbody").innerHTML = `
     <div style="font-size:16px;color:#fff;font-weight:bold">⚡ FIRE DRILL REPLAY — task #${tid} <span class="simlabel">drill mode</span></div>
     <div id="exec"></div>`;
@@ -754,28 +690,8 @@ function fireDrill() {
 }
 
 /* ---------- COMPLIANCE EXPORT ---------- */
-function feedRows() { return [...feed.querySelectorAll(".row")].reverse().map(r => r.textContent.trim()); }
-function exportCSV() {
-  const csv = "event\n" + feedRows().map(r => '"' + r.replace(/"/g, '""') + '"').join("\n");
-  const a = document.createElement("a");
-  a.href = "data:text/csv;charset=utf-8," + encodeURIComponent(csv);
-  a.download = "agentnexus_settlement_proof.csv";
-  a.click();
-}
-function exportJSON() {
-  const data = { "@context": "https://schema.org", "@type": "AuditReport", vault: ADDRESS, generated: new Date().toISOString(), events: feedRows() };
-  const a = document.createElement("a");
-  a.href = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(data, null, 2));
-  a.download = "agentnexus_settlement_proof.jsonld";
-  a.click();
-}
-function toggleHook() {
-  const c = document.getElementById("mHook");
-  c.checked = !c.checked;
-  document.getElementById("whk").textContent = "🔔 WEBHOOK: " + (c.checked ? "ON" : "OFF");
-}
 function exportAudit() {
-  const rows = feedRows();
+  const rows = [...feed.querySelectorAll(".row")].reverse().map(r => r.textContent.trim());
   const w = window.open("", "_blank");
   const html = `<html><head><title>AgentNexus Compliance Report</title>
   <style>body{font-family:monospace;padding:24px;color:#111}h1{font-size:18px}li{margin:4px 0;font-size:12px}</style></head><body>
@@ -830,7 +746,6 @@ function listen() {
   vault.on("FirewallTriggered", (taskId, rogue, slashed, reason) => {
     addRow("FIREWALL", `KILL SWITCH on task #${taskId} — ${ethers.formatEther(slashed)} BNB slashed. Reason: ${reason}${via()}${hired && insured ? " • INSURANCE POOL refund layer activated" : ""}`, Date.now(), 0, true, !!hired);
     hiredStatus(`SLASHED on task #${taskId} ✖`, "stb-red");
-    shieldCard(rogueName(Number(taskId)), (reason + "").slice(0, 22));
     if (document.getElementById("mHook").checked) addRow("ASSIGN", "[ALERT] slash webhook fired → treasury Slack + cso@corp (stub)", Date.now(), 0, false, true);
   });
 }
@@ -853,18 +768,13 @@ function updateRateTrend() {
   const r24 = fw + cp ? fw / (fw + cp) : null;
   const rPrev = prevFw + prevCp ? prevFw / (prevFw + prevCp) : null;
   const el = document.getElementById("rateTrend");
-  if (r24 === null) {
-    el.innerHTML = `<span style="background:#1f2937;color:#94a3b8;border-radius:4px;padding:1px 6px;font-size:8px">24h: BASELINE SYNCING</span>`;
-  } else {
+  if (r24 === null) el.innerHTML = "24h: — (awaiting witnessed sample)";
+  else {
     const delta = rPrev === null ? null : Math.round((r24 - rPrev) * 100);
-    el.innerHTML = `24h: ${Math.round(r24 * 100)}%` + (delta === null ? "" : ` <span style="color:${delta > 0 ? "var(--red)" : "var(--green)"}">${delta > 0 ? "▲" : "▼"}${Math.abs(delta)}</span>`);
+    el.innerHTML = `24h: ${Math.round(r24 * 100)}%` + (delta === null ? "" : ` <span style="color:${delta > 0 ? "var(--red)" : "var(--green)"}">${delta > 0 ? "▲" : "▼"}${Math.abs(delta)}</span> vs prior 24h`);
   }
-  const bars = "▁▂▄▅▆█", max = Math.max(1, ...buckets);
-  const line = buckets.map(b => {
-    const c = b === 0 ? "#374151" : (b >= max * 0.7 ? "#ef4444" : (b >= max * 0.3 ? "#f59e0b" : "#6b7280"));
-    return `<span style="color:${c}">${bars[Math.min(7, Math.floor((b / max) * 7))]</span>`;
-  }).join("");
-  document.getElementById("rateTrendline").innerHTML = line;
+  const bars = "▁▂▃▄▅▆▇█", max = Math.max(1, ...buckets);
+  document.getElementById("rateSpark").textContent = buckets.map(b => bars[Math.min(7, Math.floor((b / max) * 7))]).join("");
 }
 function updateReasonMix() {
   let rows = [];
@@ -882,11 +792,8 @@ function updateReasonMix() {
     else mix.other++;
   });
   const el = document.getElementById("rateReasons");
-  if (!n) { el.innerHTML = ""; return; }
-  const cols = { "unauth approval": "#ef4444", "slippage": "#f59e0b", "whitelist": "#8b5cf6", "yield anomaly": "#38bdf8", "other": "#6b7280" };
-  el.innerHTML = `<div style="display:flex;height:6px;border-radius:3px;overflow:hidden;margin-top:3px">` +
-    Object.entries(mix).filter(([k, v]) => v > 0).map(([k, v]) => `<div title="${k}: ${Math.round((v / n) * 100)}%" style="width:${(v / n) * 100}%;background:${cols[k]}"></div>`).join("") +
-    `</div>`;
+  if (!n) { el.textContent = "reasons: awaiting sample"; return; }
+  el.innerHTML = Object.entries(mix).filter(([k, v]) => v > 0).map(([k, v]) => `${k} ${Math.round((v / n) * 100)}%`).join(" • ");
 }
 
 async function tick() {
